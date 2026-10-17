@@ -1,0 +1,13 @@
+# Zor: Shrek olmadan geçiş nadiren mümkün (P(yol) ≈ 0.19); 3 kayaya kadar gerekebilir.
+meta:
+  profile: hard
+map:
+  stone_density: 0.50
+  path_guarantee: max_rocks
+  max_rocks_to_solve: 3
+  mossy_prob: 0.20
+water:
+  wave_rate_per_tick: 0.04     # ≈ 12 dalga/oyun
+shrek:
+  rock_max_active: 3           # ≤ 3 kaya gereken haritalar tek geçişte çözülebilsin (MODEL A.6)
+  rock_cooldown_ticks: 12

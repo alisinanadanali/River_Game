@@ -1,0 +1,10 @@
+# Isınma: yol her zaman var, su daha sakin. Yeni oyuncular ve kontrolleri öğrenmek için.
+meta:
+  profile: warmup
+map:
+  stone_density: 0.72          # 9×9'da P(yol) ≈ 0.92
+  path_guarantee: path         # kayasız yol garantili (M-04)
+  mossy_prob: 0.10
+water:
+  ou_sigma_cm: 2.0
+  wave_rate_per_tick: 0.02     # ≈ 6 dalga/oyun

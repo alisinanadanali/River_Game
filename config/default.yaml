@@ -1,0 +1,157 @@
+# Nehir Geçidi — varsayılan parametreler
+# Birimler (ADR-008): yükseklik cm, kütle kg, zaman tick. Kural kimlikleri docs/MODEL.md'dedir.
+# Bu dosya pydantic v2 şemasıyla doğrulanır; bilinmeyen anahtar hatadır.
+# Profiller (config/profiles/*.yaml) yalnızca bu dosyadan farkları içerir ve derin birleştirilir.
+# Varsayılan profil: percolation_edge (bu dosyanın değerleri o profile karşılık gelir).
+
+meta:
+  config_version: 1
+  profile: percolation_edge
+
+time:
+  tick_seconds: 0.6            # s; yalnız gerçek zamanlı modda, motor kullanmaz. Aralık (0.2, 2.0]
+  game_length_ticks: 300       # tick; ≈ 3 dk. ≥ 1
+  lives: 3                     # can; ≥ 1 (D-07)
+
+map:
+  rows: 9                      # R, karşıya geçiş yönü; ≥ 3 (M-01)
+  cols: 9                      # C, akış yönü; ≥ 3
+  stone_density: 0.58          # p; [0, 1]. 9×9'da P(kayasız yol) ≈ 0.48 (MODEL A.1) (M-02)
+  path_guarantee: max_rocks    # none | path | max_rocks (M-04)
+  max_rocks_to_solve: 2        # adet; path_guarantee = max_rocks iken; ≤ shrek.rock_max_active olmalı
+  max_regen_attempts: 200      # deneme; ≥ 1 (M-05)
+  stone_base_h_cm: [0, 20]     # cm; U[lo, hi], μ su referansına göre (M-03)
+  stiffness_kg_per_cm: 50      # kg/cm; > 0. 260 kg → 5.2 cm çökme
+  mossy_prob: 0.15             # olasılık; [0, 1]
+  mossy_stiffness_kg_per_cm: 25   # kg/cm; > 0. 320 kg → 12.8 cm çökme
+  mossy_slip_multiplier: 3.0   # çarpan; ≥ 1 (D-03)
+
+water:
+  ou_theta_per_tick: 0.08      # 1/tick; (0, 1). İlişki süresi ≈ 12.5 tick (W-01)
+  ou_mu_cm: 0.0                # cm
+  ou_sigma_cm: 2.5             # cm/√tick; ≥ 0. Durağan std ≈ 6.4 cm
+  wave_rate_per_tick: 0.03     # dalga/tick; ≥ 0. ≈ 9 dalga/oyun (W-02)
+  wave_amp_mean_cm: 12         # cm; > 0, üstel dağılım ortalaması
+  wave_speed_cols_per_tick: 0.5   # sütun/tick; > 0. 9 sütunu ≈ 18 tick'te geçer (W-03)
+  wave_width_cols: 1.5         # s, sütun; > 0. Hacim = A·s·√(2π) ≈ 3.76·A
+  wave_spawn_offset_widths: 3  # s cinsinden; dalga x = −3s'de doğar
+  wave_cull_offset_widths: 3   # s cinsinden; x > C−1+3s olunca silinir
+  flow_speed_cols_per_tick: 0.5   # sütun/tick; yüzen yüklerin sürüklenme hızı (I-04)
+
+dam:
+  downstream_drop_cm: 10       # cm; c > c_d'de seviye düşüşü (W-04)
+  # q_in = downstream_drop_cm × wave_speed_cols_per_tick = 5 cm·sütun/tick (türetilir, ayarlanmaz)
+  q_max_cm_cols: 150           # cm·sütun; patlama eşiği → A ≈ 40 cm (W-05). α = 1 sabittir.
+
+donkey:
+  mass_kg: 200                 # kg; > 0 (D-01, D-02)
+  bag_max_kg_per_side: 60      # kg; > 0 (D-09)
+  bag_max_volume_per_side: 4   # hacim birimi; ≥ 1
+  depth_ankle_cm: 0            # d₀, cm; d ≥ d₀ → BİLEK (D-04)
+  depth_knee_cm: 8             # d₁, cm; > d₀
+  depth_swept_cm: 20           # d₂, cm; > d₁
+  slow_move_ticks: 2           # tick; BİLEK ve DİZ'de hareket süresi; ≥ 1 (D-05)
+  knee_drop_prob: 0.15         # olasılık/tick; [0, 1] (D-06)
+  slip_base_prob: 0.01         # p₀; [0, 1] (D-03)
+  slip_kappa: 2.0              # κ; ≥ 0. 50 kg dengesizlik → p ≈ 0.09
+  stance_max_ticks: 4          # tick; ≥ 2 (D-08)
+  respawn_delay_ticks: 0       # tick; V0'da anında yeniden doğuş (D-07)
+
+shrek:
+  throw_cooldown_ticks: 3      # tick; ≥ 0 (S-03)
+  throw_flight_ticks: 2        # tick; ≥ 1 (S-04)
+  throw_sigma0_cells: 0.2      # σ₀, hücre; ≥ 0
+  throw_sigma_per_row_cells: 0.05   # σ₁, hücre/satır; prompt'ta 0.1 idi (MODEL A.3)
+  throw_sigma_per_kg_cells: 0.004   # σ₂, hücre/kg
+  catch_radius_cells: 0.75     # r, hücre; > 0. Prompt'ta 0.5 idi (S-05)
+  bank_load_ticks: 2           # tick; kıyıda risksiz teslim süresi (S-06)
+  rock_cooldown_ticks: 15      # tick; prompt'ta 20 idi, iki kaya örtüşsün diye (MODEL A.6) (S-07)
+  rock_max_active: 2           # adet; aynı anda en fazla geçici taş
+  rock_initial_h_cm: 20        # cm
+  rock_sink_cm_per_tick: 1.0   # cm/tick; > 0. Ömür = (20 − (−5)) / 1 = 25 tick
+  rock_vanish_h_cm: -5         # cm; h < bu değer → taş kaybolur
+  rock_stiffness_kg_per_cm: 50 # kg/cm; > 0
+  rock_raise_cm: 10            # cm; mevcut taşa atılan kayanın eklediği yükselti
+  rock_raise_decay_cm_per_tick: 1.0   # cm/tick; kalıcı taşlarda r_i sönümü
+
+items:
+  arrival_rate_per_tick: 0.1   # yük/tick; ≥ 0. ≈ 30 yük/oyun (I-01)
+  bank_capacity: 5             # adet; ≥ 1 (I-02)
+  types:                       # prob toplamı 1 olmalı
+    apple_crate: {mass_kg: 10, volume: 1, points: 1, floats: true,  prob: 0.5}
+    potato_sack: {mass_kg: 30, volume: 2, points: 3, floats: false, prob: 0.3}
+    watermelon:  {mass_kg: 50, volume: 3, points: 6, floats: true,  prob: 0.2}
+
+rewards:                       # METRICS.md §4; motor kullanmaz, envs/ kullanır
+  delivered_points: 1.0        # × points
+  caught: 0.0                  # × points
+  lost: 0.0                    # × points
+  life_lost: 0.0
+  rejected: 0.0
+
+controls:
+  tactical_mode: false         # F2 ile oyun içinde değişir
+  shrek_keymap: default        # default | alt (CONTROLS.md §2)
+  keymaps:                     # SDL scancode numaraları
+    donkey:
+      MOVE_N: 26               # W
+      MOVE_W: 4                # A
+      MOVE_S: 22               # S
+      MOVE_E: 7                # D
+      STANCE_LEFT: 20          # Q
+      STANCE_RIGHT: 8          # E
+      NOOP: 27                 # X
+    shrek_default:
+      MOVE_W: 80               # ←
+      MOVE_E: 79               # →
+      AIM_UP: 82               # ↑
+      AIM_DOWN: 81             # ↓
+      THROW: 228               # Sağ Ctrl
+      ROCK: 229                # Sağ Shift
+      DAM: 40                  # Enter (basılı)
+      NONE: 56                 # '.' (TR-Q) / '/' (US)
+    shrek_alt:
+      MOVE_W: 13               # J
+      MOVE_E: 15               # L
+      AIM_UP: 12               # I
+      AIM_DOWN: 14             # K
+      THROW: 24                # U
+      ROCK: 18                 # O
+      DAM: 44                  # Boşluk (basılı)
+      NONE: 16                 # M
+    global:
+      TOGGLE_DEBUG: 58         # F1
+      TOGGLE_TACTICAL: 59      # F2
+      PAUSE: 41                # Esc
+      RESTART: 62              # F5
+
+render:
+  window_px: [1280, 720]
+  fps: 60
+  layout:
+    top_bar_px: 48
+    bottom_bar_px: 32
+    side_panel_px: 240
+    tile_w_px: 80
+    tile_h_px: 48
+    px_per_cm: 1.6
+    water_alpha: 0.55
+  font: assets/fonts/NotoSans-Regular.ttf
+  font_mono: assets/fonts/NotoSansMono-Regular.ttf
+  palette:                     # Okabe–Ito (VISUALS.md §3)
+    dry: "#009E73"
+    ankle: "#F0E442"
+    knee: "#E69F00"
+    danger: "#D55E00"
+    water: "#0072B2"
+  debug_overlay: false
+  forecast_ticks: 5            # hata ayıklama dalga tahmini ufku
+
+metrics:
+  critical_horizon_ticks: 3    # H (METRICS.md §3)
+  dam_anticipation_lead_ticks: 2
+
+logging:
+  events_jsonl: true
+  replay: true
+  dir: runs

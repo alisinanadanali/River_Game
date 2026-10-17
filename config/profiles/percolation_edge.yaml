@@ -1,0 +1,8 @@
+# Perkolasyon kıyısı (varsayılan): haritaların ≈ yarısında yol için 1–2 kaya gerekir.
+# default.yaml bu profilin değerlerini taşır; dosya açıklık için yalnız kimlik ve kilit değerleri tekrarlar.
+meta:
+  profile: percolation_edge
+map:
+  stone_density: 0.58
+  path_guarantee: max_rocks
+  max_rocks_to_solve: 2

@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Game runs (replays, event logs)
+runs/
+
+# RL artifacts
+models/
+tensorboard/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
