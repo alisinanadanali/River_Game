@@ -6,7 +6,16 @@ not read from config: the doc is the oracle, config and code must agree with it.
 
 import pytest
 
-from tools.ghosting import COMBOS, combo_scancodes, evaluate, load_keymaps
+from tools.ghosting import (
+    COMBOS,
+    HOLD_MS,
+    HoldTracker,
+    Result,
+    combo_scancodes,
+    evaluate,
+    load_keymaps,
+    results_table,
+)
 
 # CONTROLS.md §6, in table order. Values: SDL scancodes from §1 (default) and §2 (alt).
 EXPECTED = {
@@ -72,3 +81,60 @@ def test_evaluate_nothing_pressed():
 def test_evaluate_missing_is_frozenset():
     _, missing = evaluate([26], frozenset({26, 82}))  # any iterable of pressed codes
     assert isinstance(missing, frozenset)
+
+
+# --- HoldTracker: all keys held without a break for HOLD_MS ---------------------
+
+def test_hold_ms_matches_controls_doc():
+    assert HOLD_MS == 3000  # CONTROLS.md §6: "en az 3 saniye basılı tut"
+
+
+def test_hold_not_done_before_duration():
+    t = HoldTracker(hold_ms=3000)
+    assert t.update(True, now_ms=1000) is False
+    assert t.update(True, now_ms=3999) is False
+
+
+def test_hold_done_exactly_at_duration():
+    t = HoldTracker(hold_ms=3000)
+    t.update(True, now_ms=1000)
+    assert t.update(True, now_ms=4000) is True
+
+
+def test_hold_resets_when_a_key_drops():
+    t = HoldTracker(hold_ms=3000)
+    t.update(True, now_ms=0)
+    t.update(False, now_ms=2500)               # one key ghosted for a moment
+    assert t.update(True, now_ms=3000) is False  # timer restarted at 3000
+    assert t.update(True, now_ms=6000) is True
+
+
+def test_hold_never_done_while_not_ok():
+    t = HoldTracker(hold_ms=3000)
+    assert t.update(False, now_ms=0) is False
+    assert t.update(False, now_ms=10_000) is False
+
+
+def test_hold_progress():
+    t = HoldTracker(hold_ms=3000)
+    assert t.progress(now_ms=0) == 0.0         # nothing held yet
+    t.update(True, now_ms=1000)
+    assert t.progress(now_ms=2500) == 0.5
+    assert t.progress(now_ms=9000) == 1.0      # clamped
+    t.update(False, now_ms=9000)
+    assert t.progress(now_ms=9000) == 0.0
+
+
+# --- results_table(layout, results) -> Markdown for CONTROLS.md §6 --------------
+
+def test_results_table():
+    results = [
+        Result("W+UP+THROW", ok=True, missing=frozenset()),
+        Result("A+S+THROW+ROCK", ok=False, missing=frozenset({229, 4})),
+    ]
+    assert results_table("default", results) == (
+        "| Kombinasyon | default | Eksik scancode |\n"
+        "|---|---|---|\n"
+        "| W+UP+THROW | ☑ |  |\n"
+        "| A+S+THROW+ROCK | ✗ | 4, 229 |"
+    )

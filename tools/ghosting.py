@@ -13,6 +13,8 @@ DEFAULT_CONFIG = Path(__file__).resolve().parents[1] / "config" / "default.yaml"
 
 LAYOUTS = {"default": "shrek_default", "alt": "shrek_alt"}
 
+HOLD_MS = 3000  # CONTROLS.md §6: hold each combination for at least 3 s
+
 
 @dataclass(frozen=True)
 class Combo:
@@ -58,3 +60,46 @@ def evaluate(pressed: Iterable[int], required: frozenset[int]) -> tuple[bool, fr
     """
     missing = required - frozenset(pressed)
     return not missing, missing
+
+
+class HoldTracker:
+    """Has every required key been detected without a break for `hold_ms`?
+
+    Time comes in as an argument, so tests need no clock. A single tick with a key
+    missing restarts the timer.
+    """
+
+    def __init__(self, hold_ms: int = HOLD_MS):
+        self.hold_ms = hold_ms
+        self._since: int | None = None  # when the current unbroken hold began
+
+    def update(self, ok: bool, now_ms: int) -> bool:
+        if not ok:
+            self._since = None
+            return False
+        if self._since is None:
+            self._since = now_ms
+        return now_ms - self._since >= self.hold_ms
+
+    def progress(self, now_ms: int) -> float:
+        """Fraction of `hold_ms` held so far, in [0, 1]."""
+        if self._since is None:
+            return 0.0
+        return min(1.0, (now_ms - self._since) / self.hold_ms)
+
+
+@dataclass(frozen=True)
+class Result:
+    combo_id: str
+    ok: bool
+    missing: frozenset[int]  # scancodes not detected when the combo was marked failed
+
+
+def results_table(layout: str, results: Iterable[Result]) -> str:
+    """Markdown table of one run, to paste into CONTROLS.md §6."""
+    lines = [f"| Kombinasyon | {layout} | Eksik scancode |", "|---|---|---|"]
+    for r in results:
+        mark = "☑" if r.ok else "✗"
+        missing = ", ".join(str(code) for code in sorted(r.missing))
+        lines.append(f"| {r.combo_id} | {mark} | {missing} |")
+    return "\n".join(lines)
