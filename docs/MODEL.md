@@ -271,7 +271,7 @@ yapısının parçasıdır; adlandırılmış modül sabitleridir ve config hash
 | INV-04 | Baraj korunumu: her bölümde salınan hacim = Σ q_in + Σ emilen hacim |
 | INV-05 | Kapasite: heybe kütle/hacim sınırı hiçbir tick'te aşılmaz |
 | INV-06 | Can: yalnızca `DonkeySwept` olan tick'te ve tam olarak 1 azalır |
-| INV-07 | Bağımlılık sınırı: `engine/` dış katmanları import etmez (statik test) |
+| INV-07 | Bağımlılık sınırı: `engine/` yalnızca standart kütüphane (`random`/`time`/`datetime` hariç), numpy, pydantic, pyyaml ve kendisini import eder (statik test, ADR-005) |
 | INV-08 | Geçici taş sayısı ≤ `rock_max_active`; tick sonunda 0 ≤ Q < Q_max |
 
 ---
