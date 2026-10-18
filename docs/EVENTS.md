@@ -78,5 +78,8 @@ hesaplanabilir (dalgalar deterministik ilerler). Render konumu doğrudan durumda
  "tactical_mode": false, "created_at": "2026-10-17T10:00:00Z"}
 ```
 
-`config_hash`, pydantic ile doğrulanmış config'in kanonik JSON'unun SHA-256'sıdır. Replay dosyası aynı başlığı
+`config_hash`, pydantic ile doğrulanmış config'in kanonik JSON'unun SHA-256'sıdır (`engine/config.py`).
+Kanonik JSON: `model_dump(mode="json", by_alias=True)`, anahtarlar sıralı, ayırıcılar `","` ve `":"` (boşluksuz),
+UTF-8, NaN yasak. Biçim `"sha256:" + 64 küçük onaltılık hane`. Hash ham YAML'dan değil doğrulanmış modelden
+alındığı için yorumlar, anahtar sırası ve `50` / `50.0` yazımı hash'i değiştirmez. Replay dosyası aynı başlığı
 ve tick başına `{t, donkey_action, shrek_action}` satırlarını içerir (ADR-010).

@@ -6,6 +6,7 @@ is only type-checked. No field has a default: a missing key is an error, never a
 """
 
 import copy
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -308,6 +309,21 @@ def validate_config(data: dict) -> Config:
     for a tuple field) while still refusing "9" for an int or true for an int.
     """
     return Config.model_validate_json(json.dumps(data))
+
+
+def config_hash(cfg: Config) -> str:
+    """EVENTS.md log header: "sha256:" + SHA-256 of the validated config's canonical JSON.
+
+    Taken from the model, not the YAML text, so comments, key order and 50 vs 50.0 do not change it.
+    """
+    canonical = json.dumps(
+        cfg.model_dump(mode="json", by_alias=True),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def build_config(default: dict, profile: dict | None = None, name: str | None = None) -> Config:
