@@ -82,12 +82,17 @@ gösterir). Prosedür:
 
 | Kombinasyon | Neden kritik | Varsayılan | Yedek |
 |---|---|---|---|
-| W + ↑ + Sağ Ctrl | Eşek ilerlerken Shrek nişanlayıp atıyor | ☐ | ☐ |
-| D + → + Enter | Eşek kaçarken Shrek yürümeye çalışıyor / baraj tutuyor | ☐ | ☐ |
-| Q + ↓ + Sağ Shift | Duruş + kaya | ☐ | ☐ |
-| W + D + ← + ↑ | Dört yön birden | ☐ | ☐ |
-| E + Enter (basılı) + ↑ | Baraj tutarken nişan + duruş | ☐ | ☐ |
-| A + S + Sağ Ctrl + Sağ Shift | En kötü durum | ☐ | ☐ |
+| W + ↑ + Sağ Ctrl | Eşek ilerlerken Shrek nişanlayıp atıyor | ☑ | — |
+| D + → + Enter | Eşek kaçarken Shrek yürümeye çalışıyor / baraj tutuyor | ☑ | — |
+| Q + ↓ + Sağ Shift | Duruş + kaya | ☑ | — |
+| W + D + ← + ↑ | Dört yön birden | ☑ | — |
+| E + Enter (basılı) + ↑ | Baraj tutarken nişan + duruş | ☑ | — |
+| A + S + Sağ Ctrl + Sağ Shift | En kötü durum | ☑ | — |
+
+**Sonuç (2026-10-18):** Dizüstü dahili klavye (tek klavye; harici yok). Altı kombinasyonun altısı varsayılan
+düzende 3 s kesintisiz algılandı. Yedek düzen testi gerekmedi (— = test edilmedi). Kazanan: `shrek_default`;
+`default.yaml` değişmedi. Not: araç şimdilik yalnızca basılı scancode'ları gösteriyor; "her tick oluşan iki
+eylem" gösterimi motor ve controller'lar hazır olunca (Adım 4 sonrası) eklenecek.
 
 ## 7. Gamepad (kapsam dışı, mimari hazır)
 
