@@ -20,7 +20,7 @@ Oyun, iki ajanlı, ortak ödüllü (tam işbirlikçi) stokastik bir oyundur: ⟨
 - **A_S (Shrek eylemleri):** çok-ayrık üçlü `(move, aim, ability)`:
   `move ∈ {NONE, W, E}`, `aim ∈ {NONE, UP, DOWN}`, `ability ∈ {NONE, THROW, ROCK, DAM}`, toplam 3·3·4 = 36
   bileşik eylem. Düz (flatten) kodlama RL sarmalayıcısında yapılır.
-- **T (geçiş):** `step(state, actions, rngs) -> (state', events)`. Saf ve deterministik (ADR-005).
+- **T (geçiş):** `step(state, actions, rngs) -> (state', rngs', events)`. Saf ve deterministik (ADR-005, ADR-011).
   Rastgelelik yalnızca beş RNG akışından gelir (R-01).
 - **R (ödül):** olaylardan türetilir (ADR-009). Varsayılan takım ödülü `r_t = Σ ItemDelivered.points`.
   Şekillendirme şablonları METRICS.md §4'te.
@@ -249,6 +249,8 @@ tick'te birden çok uygun yük varsa kimlik sırasıyla sığdığı kadar yakal
 **R-01 Akışlar.** Ana seed'den `SeedSequence(seed).spawn(5)` ile beş bağımsız akış türetilir:
 `rng_world` (M-02, M-03, M-05), `rng_water` (W-01, W-02), `rng_items` (I-01), `rng_throw` (S-04),
 `rng_slip` (D-02 yazı-tura, D-03, D-06). Bir akış yalnız kendi süreçleri için kullanılır.
+`spawn` sırası sabittir ve replay uyumluluğunun parçasıdır: 0 `world`, 1 `water`, 2 `items`, 3 `throw`, 4 `slip`.
+Üreteç PCG64'tür; akış durumu değişmez bir değerdir ve çekiliş yeni bir değer döndürür (ADR-011, `engine/rng.py`).
 
 **R-02 Sabit çekiliş blokları (ortak rastgele sayılar).** Oyuncu eylemine bağlı akışlar her tick, kullanılsın
 ya da kullanılmasın, sabit sayıda sayı çeker:
@@ -257,7 +259,8 @@ ya da kullanılmasın, sabit sayıda sayı çeker:
 `rng_water` her tick 1 normal + 1 Poisson + N_t üstel çeker; bu sayı eylemlerden bağımsızdır (baraj emilimi
 çekiliş yapmaz). Böylece iki farklı strateji aynı tick'te aynı rastgele sayıları görür. Bu, karşı-olgusal
 analizi (METRICS.md "kritik an") ve adil strateji karşılaştırmasını mümkün kılar. Blok boyutları model
-yapısının parçasıdır; adlandırılmış modül sabitleridir ve config hash'ine motor sürümü üzerinden girer.
+yapısının parçasıdır; adlandırılmış modül sabitleridir (`THROW_BLOCK = 2`, `SLIP_BLOCK = 4`) ve config hash'ine
+motor sürümü üzerinden girer.
 
 ---
 

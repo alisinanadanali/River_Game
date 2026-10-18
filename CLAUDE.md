@@ -33,7 +33,7 @@ Changing the tick order or any ADR decision requires a new/updated ADR in `docs/
 | `docs/METRICS.md` | Team score, Harmony report (Uyum raporu), critical moments, RL reward templates |
 | `docs/VISUALS.md` | Oblique projection, colour-blind-safe safety-margin scale, layout, HUD, debug overlay |
 | `docs/ROADMAP.md` | Phases 0–5 with acceptance criteria; target directory layout |
-| `docs/adr/` | ADR-001…ADR-010 |
+| `docs/adr/` | ADR-001…ADR-011 |
 | `config/default.yaml` | Every model parameter, with unit and valid range |
 | `config/profiles/` | `warmup`, `percolation_edge` (default), `hard`: diffs only, deep-merged |
 
@@ -41,7 +41,7 @@ Changing the tick order or any ADR decision requires a new/updated ADR in `docs/
 - **No magic numbers.** Every model number comes from validated config (pydantic v2, unknown keys rejected,
   ADR-008). Derived quantities (e.g. `q_in = downstream_drop_cm * wave_speed_cols_per_tick`) are computed in
   code, not stored. Structural constants (RNG block sizes, R-02) are named module constants documented in MODEL.md.
-- **Pure step.** `step(state, actions, rngs) -> (new_state, events)`; immutable state (frozen dataclasses,
+- **Pure step.** `step(state, actions, rngs) -> (new_state, new_rngs, events)` (ADR-011); immutable state (frozen dataclasses,
   copied numpy arrays); no I/O, no globals, no wall-clock time inside `engine/`. Single exception:
   `engine/config.py:load_config` reads the YAML files once at start-up; `step` and state code never do I/O.
 - **RNG streams.** Only the five streams from `SeedSequence(seed).spawn(5)`: `rng_world`, `rng_water`,

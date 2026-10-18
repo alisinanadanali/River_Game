@@ -1,6 +1,6 @@
 # Tick Boru Hattı (TICK)
 
-`step(state, actions, rngs) -> (new_state, events)` her çağrıda aşağıdaki 12 adımı **bu sırayla** uygular.
+`step(state, actions, rngs) -> (new_state, new_rngs, events)` (ADR-011) her çağrıda aşağıdaki 12 adımı **bu sırayla** uygular.
 Sıra oyunun anlamını belirler. Değiştirmek bir ADR ve ilgili kural testlerinin güncellenmesini gerektirir.
 Kural kimlikleri MODEL.md'dedir.
 
