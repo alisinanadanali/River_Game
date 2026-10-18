@@ -8,9 +8,13 @@ is only type-checked. No field has a default: a missing key is an error, never a
 import copy
 import json
 import math
+from pathlib import Path
 from typing import Annotated, Literal
 
+import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+CONFIG_DIR = Path(__file__).resolve().parents[1] / "config"
 
 CONFIG_VERSION = 1        # meta.config_version this schema reads
 SDL_NUM_SCANCODES = 512   # SDL scancodes are 0 … 511
@@ -304,3 +308,38 @@ def validate_config(data: dict) -> Config:
     for a tuple field) while still refusing "9" for an int or true for an int.
     """
     return Config.model_validate_json(json.dumps(data))
+
+
+def build_config(default: dict, profile: dict | None = None, name: str | None = None) -> Config:
+    """ADR-008: deep-merge profile `name` onto `default`, then validate. Pure: dicts in, Config out.
+
+    With no `name`, `default` is validated alone. A profile must say which profile it is
+    (meta.profile == name), so a copied file cannot end up in replays under the wrong name.
+    """
+    if name is None:
+        return validate_config(default)
+    if not isinstance(profile, dict):
+        raise ValueError(f"profile {name!r} must be a mapping, got {type(profile).__name__}")
+    cfg = validate_config(deep_merge(default, profile))
+    if cfg.meta.profile != name:
+        raise ValueError(f"profile {name!r} has meta.profile {cfg.meta.profile!r}; they must match")
+    return cfg
+
+
+def load_config(profile: str | None = None, config_dir: Path = CONFIG_DIR) -> Config:
+    """Read default.yaml and profiles/<profile>.yaml from `config_dir` and build the Config.
+
+    The only file I/O in engine/; it runs once at start-up, never inside step.
+    """
+    default = _read_yaml(config_dir / "default.yaml")
+    if profile is None:
+        return build_config(default)
+    available = sorted(p.stem for p in (config_dir / "profiles").glob("*.yaml"))
+    if profile not in available:
+        raise ValueError(f"unknown profile {profile!r}; expected one of {available}")
+    return build_config(default, _read_yaml(config_dir / "profiles" / f"{profile}.yaml"), profile)
+
+
+def _read_yaml(path: Path):
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
