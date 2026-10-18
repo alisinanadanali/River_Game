@@ -17,5 +17,6 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]                                   # import engine/, tools/ from the project root
 addopts = ["--strict-markers", "--strict-config"]
 xfail_strict = true
