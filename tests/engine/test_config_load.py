@@ -4,7 +4,6 @@ build_config is the pure part (dicts in, Config out); load_config only reads the
 """
 
 import shutil
-from pathlib import Path
 
 import pytest
 import yaml

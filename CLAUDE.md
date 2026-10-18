@@ -42,7 +42,8 @@ Changing the tick order or any ADR decision requires a new/updated ADR in `docs/
   ADR-008). Derived quantities (e.g. `q_in = downstream_drop_cm * wave_speed_cols_per_tick`) are computed in
   code, not stored. Structural constants (RNG block sizes, R-02) are named module constants documented in MODEL.md.
 - **Pure step.** `step(state, actions, rngs) -> (new_state, events)`; immutable state (frozen dataclasses,
-  copied numpy arrays); no I/O, no globals, no wall-clock time inside `engine/`.
+  copied numpy arrays); no I/O, no globals, no wall-clock time inside `engine/`. Single exception:
+  `engine/config.py:load_config` reads the YAML files once at start-up; `step` and state code never do I/O.
 - **RNG streams.** Only the five streams from `SeedSequence(seed).spawn(5)`: `rng_world`, `rng_water`,
   `rng_items`, `rng_throw`, `rng_slip` (ADR-006). Action-dependent streams draw fixed-size blocks every tick.
   Never create an RNG elsewhere; never use `random` or `np.random.*` global functions.
