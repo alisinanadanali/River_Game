@@ -5,7 +5,9 @@ not read from config: the doc is the oracle, config and code must agree with it.
 """
 
 import pytest
+from pydantic import ValidationError
 
+from engine.config import CONFIG_DIR
 from tools.ghosting import (
     COMBOS,
     HOLD_MS,
@@ -16,6 +18,8 @@ from tools.ghosting import (
     load_keymaps,
     results_table,
 )
+
+DEFAULT_YAML = CONFIG_DIR / "default.yaml"
 
 # CONTROLS.md §6, in table order. Values: SDL scancodes from §1 (default) and §2 (alt).
 EXPECTED = {
@@ -45,6 +49,15 @@ def test_default_layout_scancodes(combo, keymaps):
 @pytest.mark.parametrize("combo", COMBOS, ids=lambda c: c.id)
 def test_alt_layout_scancodes(combo, keymaps):
     assert combo_scancodes(combo, keymaps, "alt") == EXPECTED[combo.id][1]
+
+
+def test_keymaps_come_from_the_validated_config(tmp_path):
+    # A key bound twice (X -> W) is caught by engine.config, so the ghosting tool never tests a broken map.
+    text = DEFAULT_YAML.read_text(encoding="utf-8").replace("NOOP: 27", "NOOP: 26")
+    (tmp_path / "default.yaml").write_text(text, encoding="utf-8")
+    (tmp_path / "profiles").mkdir()
+    with pytest.raises(ValidationError, match="scancode 26"):
+        load_keymaps(config_dir=tmp_path)
 
 
 def test_unknown_layout_is_rejected(keymaps):

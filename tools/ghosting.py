@@ -7,9 +7,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-import yaml
-
-DEFAULT_CONFIG = Path(__file__).resolve().parents[1] / "config" / "default.yaml"
+from engine.config import CONFIG_DIR, load_config
 
 LAYOUTS = {"default": "shrek_default", "alt": "shrek_alt"}
 
@@ -35,13 +33,9 @@ COMBOS = (
 )
 
 
-def load_keymaps(path: Path = DEFAULT_CONFIG) -> dict[str, dict[str, int]]:
-    """Read controls.keymaps from the YAML config.
-
-    Temporary: reads the raw YAML. Step 2 replaces this with the validated engine.config loader.
-    """
-    with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)["controls"]["keymaps"]
+def load_keymaps(config_dir: Path = CONFIG_DIR) -> dict[str, dict[str, int]]:
+    """controls.keymaps from the validated config (engine.config), as plain dicts keyed like the YAML."""
+    return load_config(config_dir=config_dir).controls.keymaps.model_dump(by_alias=True)
 
 
 def combo_scancodes(combo: Combo, keymaps: dict[str, dict[str, int]], layout: str) -> frozenset[int]:
