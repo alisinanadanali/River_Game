@@ -7,12 +7,14 @@ is only type-checked. No field has a default: a missing key is an error, never a
 
 import copy
 import json
+import math
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 CONFIG_VERSION = 1        # meta.config_version this schema reads
 SDL_NUM_SCANCODES = 512   # SDL scancodes are 0 … 511
+PROB_SUM_ABS_TOL = 1e-9   # item probabilities must sum to 1 within this (MODEL.md §9)
 
 
 def deep_merge(base: dict, override: dict) -> dict:
@@ -74,6 +76,14 @@ class MapConfig(StrictModel):
     mossy_stiffness_kg_per_cm: PosFloat
     mossy_slip_multiplier: Annotated[float, Field(ge=1)]   # D-03
 
+    @model_validator(mode="after")
+    def _base_range_ordered(self):
+        """M-03: stone base height is U[lo, hi], so lo ≤ hi."""
+        lo, hi = self.stone_base_h_cm
+        if lo > hi:
+            raise ValueError(f"stone_base_h_cm [{lo}, {hi}]: lo must be ≤ hi")
+        return self
+
 
 class WaterConfig(StrictModel):
     ou_theta_per_tick: Annotated[float, Field(gt=0, lt=1)]  # W-01
@@ -107,6 +117,16 @@ class DonkeyConfig(StrictModel):
     stance_max_ticks: Annotated[int, Field(ge=2)]   # D-08
     respawn_delay_ticks: int                   # D-07
 
+    @model_validator(mode="after")
+    def _depths_increase(self):
+        """D-04: ankle < knee < swept."""
+        if not self.depth_ankle_cm < self.depth_knee_cm < self.depth_swept_cm:
+            raise ValueError(
+                f"depth thresholds must increase: depth_ankle_cm {self.depth_ankle_cm} < "
+                f"depth_knee_cm {self.depth_knee_cm} < depth_swept_cm {self.depth_swept_cm}"
+            )
+        return self
+
 
 class ShrekConfig(StrictModel):
     throw_cooldown_ticks: NonNegInt            # S-03
@@ -138,6 +158,14 @@ class ItemsConfig(StrictModel):
     arrival_rate_per_tick: NonNegFloat         # I-01
     bank_capacity: PosInt                      # I-02
     types: dict[str, ItemType]
+
+    @model_validator(mode="after")
+    def _probs_sum_to_one(self):
+        """I-01: an arriving item's type is drawn from items.types.*.prob."""
+        total = math.fsum(t.prob for t in self.types.values())
+        if not math.isclose(total, 1.0, rel_tol=0, abs_tol=PROB_SUM_ABS_TOL):
+            raise ValueError(f"items.types.*.prob must sum to 1, got {total}")
+        return self
 
 
 class RewardsConfig(StrictModel):
@@ -183,6 +211,18 @@ class Keymaps(StrictModel):
     shrek_default: ShrekKeys
     shrek_alt: ShrekKeys
     global_: GlobalKeys = Field(alias="global")   # `global` is a Python keyword; no default despite the `=`
+
+    @model_validator(mode="after")
+    def _no_scancode_bound_twice(self):
+        """CONTROLS.md §1–§3: within the active key set (donkey + one Shrek layout + global) each key does one thing."""
+        for layout in ("shrek_default", "shrek_alt"):
+            seen: dict[int, str] = {}
+            for group in ("donkey", layout, "global_"):
+                for action, code in getattr(self, group).model_dump().items():
+                    if code in seen:
+                        raise ValueError(f"scancode {code} bound to both {seen[code]} and {group}.{action}")
+                    seen[code] = f"{group}.{action}"
+        return self
 
 
 class ControlsConfig(StrictModel):
@@ -245,6 +285,16 @@ class Config(StrictModel):
     render: RenderConfig
     metrics: MetricsConfig
     logging: LoggingConfig
+
+    @model_validator(mode="after")
+    def _guaranteed_map_is_solvable(self):
+        """M-04, MODEL A.6: a map needing k rocks is solvable in one crossing only if k ≤ rock_max_active."""
+        if self.map.path_guarantee == "max_rocks" and self.map.max_rocks_to_solve > self.shrek.rock_max_active:
+            raise ValueError(
+                f"map.max_rocks_to_solve {self.map.max_rocks_to_solve} > "
+                f"shrek.rock_max_active {self.shrek.rock_max_active}"
+            )
+        return self
 
 
 def validate_config(data: dict) -> Config:

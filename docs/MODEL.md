@@ -276,6 +276,24 @@ yapısının parçasıdır; adlandırılmış modül sabitleridir ve config hash
 
 ---
 
+## 9. Config doğrulaması (ADR-008, `engine/config.py`)
+
+Doğrulama profil derin birleştirmesinden **sonra** yapılır; profil tek başına eksik bir config'tir. Tek alan
+aralıkları `config/default.yaml` yorumlarındadır. Alanlar arası kurallar (`tests/engine/test_config_cross.py`):
+
+| Kural | Kaynak |
+|---|---|
+| `path_guarantee = max_rocks` ise `max_rocks_to_solve ≤ shrek.rock_max_active` (aksi hâlde garanti edilen harita tek geçişte çözülemez) | M-04, MODEL A.6 |
+| `depth_ankle_cm < depth_knee_cm < depth_swept_cm` | D-04 |
+| `stone_base_h_cm = [lo, hi]` ile `lo ≤ hi` | M-03 |
+| `items.types.*.prob` toplamı 1 (mutlak tolerans `PROB_SUM_ABS_TOL = 1e-9`) | I-01 |
+| Her Shrek düzeni için `donkey ∪ shrek_<düzen> ∪ global` içinde bir scancode iki eyleme bağlanamaz | CONTROLS.md §1–§3 |
+
+Yapısal sabitler (config'te değil, `engine/config.py` modül sabiti): `CONFIG_VERSION = 1` (şemanın okuduğu
+`meta.config_version`), `SDL_NUM_SCANCODES = 512` (geçerli scancode 0…511), `PROB_SUM_ABS_TOL = 1e-9`.
+
+---
+
 ## Ek A — Tasarım hesapları (Monte Carlo, 2026-10-17)
 
 Yöntem: numpy ile bellek içi simülasyon. Perkolasyon için 20 000 harita; su için 120 000 tick'lik tek yörünge
