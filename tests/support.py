@@ -1,11 +1,13 @@
 """Shared test helpers: configs with a few values changed, and whole games run through step."""
 
+import hashlib
+import itertools
 from collections.abc import Iterable
 from dataclasses import dataclass
 
 import yaml
 
-from engine.actions import Actions
+from engine.actions import Ability, Actions, Aim, DonkeyAction, ShrekAction, ShrekMove
 from engine.config import CONFIG_DIR, Config, build_config, deep_merge
 from engine.events import Event, events_to_jsonl
 from engine.rng import Rngs
@@ -34,6 +36,12 @@ class Trace:
         """INV-02: the event log as it would be written to disk (UTF-8 JSONL)."""
         return events_to_jsonl(self.events).encode("utf-8")
 
+    def digest(self) -> str:
+        """SHA-256 over the event log, every state and every stream state, to compare runs across processes."""
+        h = hashlib.sha256(self.jsonl)
+        h.update(repr((self.states, self.rngs)).encode("utf-8"))
+        return h.hexdigest()
+
 
 def run(config: Config, seed: int, actions: Iterable[Actions], start: tuple[GameState, Rngs] | None = None) -> Trace:
     """Step once per entry of `actions`, from `start` or from new_game(config, seed)."""
@@ -45,3 +53,16 @@ def run(config: Config, seed: int, actions: Iterable[Actions], start: tuple[Game
         streams.append(rngs)
         events.extend(tick_events)
     return Trace(tuple(states), tuple(streams), tuple(events))
+
+
+def scripted_actions(n: int) -> list[Actions]:
+    """A fixed, varied action script of length n: every donkey action against a rotation of Shrek actions."""
+    shrek = [
+        ShrekAction(),
+        ShrekAction(move=ShrekMove.E, aim=Aim.UP, ability=Ability.THROW),
+        ShrekAction(move=ShrekMove.W, ability=Ability.ROCK),
+        ShrekAction(aim=Aim.DOWN, ability=Ability.DAM),
+        ShrekAction(move=ShrekMove.E),
+    ]
+    pairs = zip(itertools.cycle(DonkeyAction), itertools.cycle(shrek))
+    return [Actions(donkey=d, shrek=s) for d, s in itertools.islice(pairs, n)]
