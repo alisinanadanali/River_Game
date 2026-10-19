@@ -3,7 +3,11 @@
 import numpy as np
 import pytest
 
+from engine.actions import Ability, Actions, DonkeyAction, ShrekAction
+from engine.config import load_config
 from engine.rng import SLIP_BLOCK, THROW_BLOCK, draw, draw_blocks, make_rngs
+from engine.state import new_game
+from engine.step import step
 
 from tests.rules.test_R01_streams import GOLDEN_42
 
@@ -66,3 +70,13 @@ def test_same_block_count_whatever_was_used():
         _, _, a = draw_blocks(a)      # tick where nothing was thrown
         _, _, b = draw_blocks(b)      # tick where everything was used: still one block
     assert a == b
+
+
+@pytest.mark.parametrize("ability", list(Ability))
+@pytest.mark.parametrize("donkey", [DonkeyAction.NOOP, DonkeyAction.MOVE_N, DonkeyAction.STANCE_LEFT])
+def test_step_draws_exactly_one_block_whatever_the_actions(donkey, ability):
+    # TICK.md step 0. Steps 2, 3 and 7 use the block; none of them may draw more from throw or slip.
+    state, rngs = new_game(load_config(), 42)
+    _, after, _ = step(state, Actions(donkey=donkey, shrek=ShrekAction(ability=ability)), rngs)
+    _, _, one_block = draw_blocks(rngs)
+    assert (after.throw, after.slip) == (one_block.throw, one_block.slip)

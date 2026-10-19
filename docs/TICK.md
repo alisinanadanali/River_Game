@@ -4,6 +4,11 @@
 Sıra oyunun anlamını belirler. Değiştirmek bir ADR ve ilgili kural testlerinin güncellenmesini gerektirir.
 Kural kimlikleri MODEL.md'dedir.
 
+**Kodda:** `engine/step.py`. `PIPELINE` demeti bu 13 adımı (0 … 12) aynı sırayla tutar. Her aşama bir `Tick`
+değeri alır ve yenisini döndürür. Aşamanın docstring'i `TICK.md step N:` ile başlar ve aşağıdaki özet tablonun
+Kurallar sütununu birebir anar (`Rules: …`). `tests/engine/test_step.py` bu belgeyi okuyup ikisini karşılaştırır;
+buradaki bir sıra ya da kural değişikliği kodda yapılmazsa test kırmızı olur.
+
 ## Özet
 
 | # | Adım | Kurallar | RNG | Yayılan olaylar |
