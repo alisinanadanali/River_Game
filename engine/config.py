@@ -15,6 +15,8 @@ from typing import Annotated, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from engine.canonical import canonical_json
+
 CONFIG_DIR = Path(__file__).resolve().parents[1] / "config"
 
 CONFIG_VERSION = 1        # meta.config_version this schema reads
@@ -316,13 +318,7 @@ def config_hash(cfg: Config) -> str:
 
     Taken from the model, not the YAML text, so comments, key order and 50 vs 50.0 do not change it.
     """
-    canonical = json.dumps(
-        cfg.model_dump(mode="json", by_alias=True),
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    )
+    canonical = canonical_json(cfg.model_dump(mode="json", by_alias=True))
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 

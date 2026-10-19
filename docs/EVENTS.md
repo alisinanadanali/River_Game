@@ -9,6 +9,13 @@ Olay adları ve alan adları İngilizcedir; arayüzde gösterilen metinler GLOSS
 
 Bir olay eklemek ya da alan değiştirmek, log şema sürümünü (`event_schema_version`) artırır.
 
+**Kodda:** `engine/events.py`. Her olay `Event`'ten türeyen dondurulmuş, yalnız anahtar kelimeyle kurulan bir
+dataclass'tır; `type` sınıf adıdır, ayrı bir alan değildir. Olay sınıfları, onları yayan kuralla birlikte
+eklenir (adım 4'te yalnız `GameOver`). Bir olayın JSON satırı, ortak alanlarla olay alanlarının tek düz nesnede
+kanonik JSON'udur (aşağıda, log başlığı): `{"reason":"time","score":12,"seq":0,"t":299,"type":"GameOver"}`.
+Şema sürümü 1, ilk sürüm (v0.1.0) etiketlenene kadar sabit kalır; o zamana dek katalog bu belgeyle birlikte
+büyür.
+
 ## Eylem ve rol olayları
 
 | Olay | Alanlar | Adım | Tüketici |
@@ -68,7 +75,7 @@ hesaplanabilir (dalgalar deterministik ilerler). Render konumu doğrudan durumda
 
 | Olay | Alanlar | Adım | Tüketici |
 |---|---|---|---|
-| `GameOver` | `reason` (`time`/`lives`), `score`, `t` | 7, 11 | R, L, Ö, U |
+| `GameOver` | `reason` (`time`/`lives`), `score` (bitişin tick'i ortak `t` alanıdır) | 7, 11 | R, L, Ö, U |
 
 ## Log başlığı (JSONL ilk satırı)
 
