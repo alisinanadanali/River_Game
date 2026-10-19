@@ -133,9 +133,13 @@ Sayısal ızgara alanları `numpy` dizileridir ve kopyalanarak güncellenir.
 
 ## GameState
 
+Kodda `engine/state.py`. Alanlar, onları kullanan kurallarla birlikte eklenir (adım 4'te yalnız `config`, `t`,
+`score`, `game_over`). Başlangıç durumu `new_game(config, seed) -> (state, rngs)` ile kurulur.
+
 | Alan | Tip | Açıklama |
 |---|---|---|
-| `t` | int | Tick sayacı |
+| `config` | Config | Doğrulanmış, değişmez config (ADR-008). `step` imzasında config yoktur; kurallar parametreleri buradan okur |
+| `t` | int | Tick sayacı; sıradaki `step` çağrısı t tick'ini işler |
 | `world` | World | Değişmez harita |
 | `stones` | StoneState | Kalıcı taşların dinamik kısmı |
 | `temp_stones` | tuple[TempStone] | ≤ `rock_max_active` |
@@ -146,8 +150,20 @@ Sayısal ızgara alanları `numpy` dizileridir ve kopyalanarak güncellenir.
 | `bank` | Bank | — |
 | `score` | int | Teslim puanı |
 | `game_over` | enum \| None | `TIME` / `LIVES` |
-| `rng_state` | dict | Beş akışın bit-generator durumu (replay doğrulaması) |
 | `next_ids` | dict | Yük, dalga, geçici taş kimlik sayaçları |
+
+RNG akışları durumun parçası değildir: `step` onları ayrı alır ve yeni değerlerini ayrı döndürür (ADR-011,
+`engine/rng.py` `Rngs`).
+
+## Actions (eylemler)
+
+Kodda `engine/actions.py`; uzaylar MODEL.md §1'dedir. Enum sırası RL kodlamasıdır (indeks = eylem kimliği).
+
+| Tip | Alanlar / değerler | Varsayılan |
+|---|---|---|
+| `DonkeyAction` | `NOOP`, `MOVE_N`, `MOVE_S`, `MOVE_E`, `MOVE_W`, `STANCE_LEFT`, `STANCE_RIGHT` | — |
+| `ShrekAction` | `move` ∈ `ShrekMove{NONE, W, E}`, `aim` ∈ `Aim{NONE, UP, DOWN}`, `ability` ∈ `Ability{NONE, THROW, ROCK, DAM}` | hepsi `NONE` |
+| `Actions` | `donkey: DonkeyAction`, `shrek: ShrekAction` (bir tick'in girdisi) | `NOOP`, `ShrekAction()` |
 
 ## Durum makineleri
 
