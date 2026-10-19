@@ -7,6 +7,7 @@ import pytest
 from engine.config import load_config
 from engine.rng import make_rngs
 from engine.state import GameState, new_game
+from engine.world import generate_world
 
 CFG = load_config()
 
@@ -22,9 +23,17 @@ def test_carries_its_config():
     assert state.config is CFG
 
 
-def test_streams_come_from_the_seed():
+def test_world_comes_from_the_seed():
+    state, rngs = new_game(CFG, 42)
+    world, after_world = generate_world(CFG.map, 42, make_rngs(42))
+    assert state.world == world and rngs == after_world
+
+
+def test_only_the_world_stream_is_used_before_tick_zero():
     _, rngs = new_game(CFG, 42)
-    assert rngs == make_rngs(42)
+    fresh = make_rngs(42)
+    assert rngs.world != fresh.world
+    assert (rngs.water, rngs.items, rngs.throw, rngs.slip) == (fresh.water, fresh.items, fresh.throw, fresh.slip)
 
 
 def test_same_inputs_equal_states():
@@ -45,7 +54,7 @@ def test_state_is_frozen():
 
 def test_fields_are_keyword_only():
     with pytest.raises(TypeError):
-        GameState(CFG, 0, 0, None)
+        GameState(CFG, None, 0, 0, None)
 
 
 def test_repr_leaves_out_the_config():

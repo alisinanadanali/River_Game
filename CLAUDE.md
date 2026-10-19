@@ -67,4 +67,5 @@ uv run python main.py                 # Phase 1: pygame-ce game
 
 ## Current phase
 Phase 0 in progress (see `docs/ROADMAP.md`). Done: toolchain, ghosting test, INV-07, config, RNG, walking
-skeleton (`engine/step.py` pipeline + INV-02). Next: world generation (M-01 … M-05).
+skeleton (`engine/step.py` pipeline + INV-02), world generation (`engine/world.py`, M-01 … M-05).
+Next: water (W-01 … W-07).

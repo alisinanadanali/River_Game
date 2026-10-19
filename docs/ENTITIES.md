@@ -136,8 +136,9 @@ dizilerin içeriğiyle tanımlıdır (`NaN` = `NaN`), böylece `GameState` karş
 
 ## GameState
 
-Kodda `engine/state.py`. Alanlar, onları kullanan kurallarla birlikte eklenir (adım 4'te yalnız `config`, `t`,
-`score`, `game_over`). Başlangıç durumu `new_game(config, seed) -> (state, rngs)` ile kurulur.
+Kodda `engine/state.py`. Alanlar, onları kullanan kurallarla birlikte eklenir (şu an `config`, `world`, `t`,
+`score`, `game_over`). Başlangıç durumu `new_game(config, seed) -> (state, rngs)` ile kurulur: harita
+(M-05) üretilir ve `rngs` içinde `rng_world` ilerlemiş olarak döner.
 
 | Alan | Tip | Açıklama |
 |---|---|---|
