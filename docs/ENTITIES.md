@@ -15,16 +15,19 @@ Sayısal ızgara alanları `numpy` dizileridir ve kopyalanarak güncellenir.
 
 ## World (değişmez harita)
 
+Kodda `engine/world.py`; `new_game` içinde `generate_world` ile üretilir. Diziler salt okunurdur. Eşitlik
+dizilerin içeriğiyle tanımlıdır (`NaN` = `NaN`), böylece `GameState` karşılaştırması (INV-02) çalışır.
+
 | Alan | Tip | Birim | Aralık | Açıklama |
 |---|---|---|---|---|
 | `rows`, `cols` | int | hücre | ≥ 3 | R, C |
 | `is_stone` | bool[R,C] | — | — | Kalıcı taş var mı (M-02) |
-| `base_h` | float[R,C] | cm | `stone_base_h_cm` | Taban yüksekliği h_i (M-03) |
-| `stiffness` | float[R,C] | kg/cm | > 0 | k_i |
-| `mossy` | bool[R,C] | — | — | Yosunlu mu |
+| `base_h` | float[R,C] | cm | `stone_base_h_cm` | Taban yüksekliği h_i (M-03); su hücresinde `NaN` |
+| `stiffness` | float[R,C] | kg/cm | > 0 | k_i; su hücresinde `NaN` |
+| `mossy` | bool[R,C] | — | — | Yosunlu mu; su hücresinde `False` |
 | `rocks_to_solve` | int | adet | ≥ 0 | 0-1 BFS sonucu (M-04) |
-| `seed` | int | — | — | Dünya seed'i |
-| `regen_attempt` | int | — | ≥ 0 | Kaçıncı alt-seed ile üretildiği (M-05) |
+| `seed` | int | — | — | Oyunun ana seed'i (R-01) |
+| `regen_attempt` | int | — | ≥ 0 | Koşulu sağlayan denemenin sırası, 0'dan (M-05) |
 
 ## Stone dinamiği (StoneState)
 

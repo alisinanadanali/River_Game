@@ -40,10 +40,17 @@ yürünebilir ve KURU'dur. Eşeğin hareket grafı: kıyı hücreleri ∪ taş h
 config: `map.rows`, `map.cols`
 
 **M-02 Site perkolasyonu.** Her nehir hücresi bağımsız olarak p olasılığıyla taştır: `is_stone ~ Bernoulli(p)`.
+Çekiliş biçimi (ortak rastgele sayılar): bir üretim denemesi `rng_world`'den `WORLD_LAYERS × R × C` uniform
+çeker (`WORLD_LAYERS = 3`: taş, yükseklik, yosun katmanı; `engine/world.py`). `is_stone = U_taş < p`. Her
+hücre, taş olsun olmasın, kendi üç sayısını alır. Böylece aynı seed'de p büyüdükçe yalnız taş **eklenir**
+(monoton eşleme) ve var olan taşların h ve yosun değerleri değişmez; profiller arası karşılaştırma ve
+dengeleme (METRICS §5) aynı haritanın varyantları üzerinde yapılır.
 config: `map.stone_density`
 
-**M-03 Taş özellikleri.** Her taş için `h_i ~ U[h_lo, h_hi]`, `mossy_i ~ Bernoulli(p_moss)`;
-`k_i = k_moss` (yosunluysa) ya da `k_normal`. Kayma çarpanı `μ_i = mossy_slip_multiplier` (yosunlu) ya da 1.
+**M-03 Taş özellikleri.** Her taş için `h_i ~ U[h_lo, h_hi]` (`h_lo + (h_hi − h_lo)·U_yük`),
+`mossy_i ~ Bernoulli(p_moss)` (`U_yosun < p_moss`); `k_i = k_moss` (yosunluysa) ya da `k_normal`.
+Kayma çarpanı `μ_i = mossy_slip_multiplier` (yosunlu) ya da 1. Su hücrelerinde h ve k tanımsızdır ve `NaN`
+tutulur (0 cm geçerli bir yükseklik olduğu için 0 yazmak hatayı gizlerdi); `mossy` yanlıştır.
 config: `map.stone_base_h_cm`, `map.mossy_prob`, `map.stiffness_kg_per_cm`, `map.mossy_stiffness_kg_per_cm`, `map.mossy_slip_multiplier`
 
 **M-04 Çözülebilirlik (0-1 BFS).** Güney kıyısından kuzey kıyısına, taş hücresine giriş maliyeti 0, su
@@ -54,9 +61,12 @@ Su seviyesi ve zaman hesaba katılmaz (topolojik ölçü). Profil koşulu:
 - `path_guarantee: max_rocks` → `n_rock ≤ max_rocks_to_solve`.
 config: `map.path_guarantee`, `map.max_rocks_to_solve`
 
-**M-05 Yeniden üretim.** Koşul sağlanmazsa harita `rng_world`'ün i'inci alt akışıyla (SeedSequence.spawn)
-yeniden üretilir; i = 0, 1, … `max_regen_attempts − 1`. Aşılırsa config geçersiz sayılır (hata). Aynı seed
-her zaman aynı denemeyi seçer, determinizm korunur.
+**M-05 Yeniden üretim.** Deneme i (i = 0, 1, … `max_regen_attempts − 1`), `rng_world`'ün i'inci ardışık
+bloğunu (M-02) kullanır: deneme i, akıştan i blok çekildikten sonraki bloğu görür. Koşulu (M-04) sağlayan ilk
+deneme haritayı verir (`World.regen_attempt = i`); `new_game` dönen `rngs.world`'ü i + 1 blok ilerlemiş
+olarak döndürür. Hiçbir deneme koşulu sağlamazsa config bu seed için geçersiz sayılır (`MapGenerationError`).
+Aynı seed her zaman aynı denemeyi seçer, determinizm korunur. (2026-10-20: "SeedSequence.spawn alt akışı"
+yerine ardışık bloklar seçildi; `rng_world` ADR-011 gereği bir `StreamState` değeridir.)
 config: `map.max_regen_attempts`
 
 ---
@@ -256,6 +266,7 @@ tick'te birden çok uygun yük varsa kimlik sırasıyla sığdığı kadar yakal
 ya da kullanılmasın, sabit sayıda sayı çeker:
 - `rng_throw`: tick başına 2 standart normal (o tick atış varsa kullanılır);
 - `rng_slip`: tick başına 4 uniform (kayma, kayma tarafı, diz kaybı, diz tarafı).
+`rng_world` yalnız `new_game` içinde, deneme başına `WORLD_LAYERS × R × C` uniform çeker (M-02, M-05).
 `rng_water` her tick 1 normal + 1 Poisson + N_t üstel çeker; bu sayı eylemlerden bağımsızdır (baraj emilimi
 çekiliş yapmaz). Böylece iki farklı strateji aynı tick'te aynı rastgele sayıları görür. Bu, karşı-olgusal
 analizi (METRICS.md "kritik an") ve adil strateji karşılaştırmasını mümkün kılar. Blok boyutları model
