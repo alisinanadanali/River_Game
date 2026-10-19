@@ -132,3 +132,20 @@ def meets_guarantee(map_cfg: MapConfig, n_rock: int) -> bool:
             return n_rock == 0
         case "max_rocks":
             return n_rock <= map_cfg.max_rocks_to_solve
+
+
+class MapGenerationError(ValueError):
+    """M-05: no attempt within max_regen_attempts met the profile's path_guarantee for this seed."""
+
+
+def generate_world(map_cfg: MapConfig, seed: int, rngs: Rngs) -> tuple[World, Rngs]:
+    """M-05: the first attempt whose map meets M-04; returns it with rng_world advanced past its block."""
+    for attempt in range(map_cfg.max_regen_attempts):
+        block, rngs = draw_world_block(rngs, map_cfg)
+        world = build_world(block, map_cfg, seed=seed, attempt=attempt)
+        if meets_guarantee(map_cfg, world.rocks_to_solve):
+            return world, rngs
+    raise MapGenerationError(
+        f"seed {seed}: no map met path_guarantee={map_cfg.path_guarantee!r} "
+        f"(max_rocks_to_solve={map_cfg.max_rocks_to_solve}) in {map_cfg.max_regen_attempts} attempts"
+    )
