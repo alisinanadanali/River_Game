@@ -15,7 +15,9 @@ from engine.events import (
     Side,
 )
 from engine.evolve import evolve
-from engine.items import Projectile, drop_into_water, item_type, landing_cell, lose, return_to_bank, set_item
+from engine.items import (
+    Projectile, drift, drop_into_water, item_type, landing_cell, lose, return_to_bank, round_half_up, set_item,
+)
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports engine/donkey.py
     from engine.tick import Tick
@@ -90,3 +92,26 @@ def _land_throw(tick: Tick, p: Projectile) -> Tick:
     if row > rows - 1 or not 0 <= col < cols:
         return lose(tick, p.item_id, LostReason.OFF_MAP)
     return drop_into_water(tick, p.item_id, row, p.landing[1])
+
+
+def floating_stage(tick: Tick) -> Tick:
+    """TICK.md step 8: for each floating item in id order, first the I-05 catch, then the I-04 drift."""
+    floating = [i for i in tick.state.items if i.status is ItemStatus.FLOATING]
+    for item in floating:
+        tick, ok = _catch_floating(tick, item)
+        if not ok:
+            tick = drift(tick, tick.state.items[item.id])
+    return tick
+
+
+def _catch_floating(tick: Tick, item) -> tuple[Tick, bool]:
+    """I-05: the donkey in the item's cell (r, round(x)), in a valid stance, with room in the stance bag."""
+    donkey = tick.state.donkey
+    row, x = item.pos
+    if (donkey.row, donkey.col) != (row, round_half_up(x)) or not stance_ready(donkey, tick.t):
+        return tick, False
+    tick, ok = try_bag(tick, item.id, donkey.stance)
+    if ok:
+        tick = tick.emit(ItemCaught, item_id=item.id, side=donkey.stance, source=CatchSource.FLOATING,
+                         miss_distance=abs(x - donkey.col))
+    return tick, ok

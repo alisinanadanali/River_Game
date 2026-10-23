@@ -116,6 +116,16 @@ def drop_into_water(tick: Tick, item_id: int, row: int, x: float) -> Tick:
     return lose(tick, item_id, LostReason.SANK)
 
 
+def drift(tick: Tick, item: Item) -> Tick:
+    """I-04: a floating item moves x += flow_speed; past x > C − 0.5 it is lost (drifted_off)."""
+    cfg = tick.state.config
+    row, x = item.pos
+    x += cfg.water.flow_speed_cols_per_tick
+    if x > cfg.map.cols - 0.5:
+        return lose(tick, item.id, LostReason.DRIFTED_OFF)
+    return set_item(tick, evolve(item, pos=(row, x)))
+
+
 def return_to_bank(tick: Tick, item_id: int, cause: ReturnCause) -> Tick:
     """S-05, S-06: back to the end of the queue, or LOST(bank_overflow) if it is full (I-02)."""
     state = tick.state

@@ -77,7 +77,9 @@ def test_bags_empty_into_the_water_in_id_order():
     ]
     after = trace.states[0]
     assert [i.status for i in after.items] == [ItemStatus.LOST, ItemStatus.FLOATING, ItemStatus.FLOATING]
-    assert after.items[1].pos == (0, 2.0) and after.donkey.bag_left == Bag() == after.donkey.bag_right
+    # Dropped at x = 2 (ItemFloated), then drifted in step 8 of the same tick (TICK.md step 8).
+    assert after.items[1].pos == (0, 2.0 + CFG.water.flow_speed_cols_per_tick)
+    assert after.donkey.bag_left == Bag() == after.donkey.bag_right
     names = [type(e).__name__ for e in trace.events]
     assert names == ["DonkeySwept", "ItemDropped", "ItemSank", "ItemLost", "ItemDropped", "ItemFloated",
                      "ItemDropped", "ItemFloated", "LifeLost", "DonkeyRespawned"]

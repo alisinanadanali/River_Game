@@ -13,11 +13,11 @@ from engine.actions import DonkeyAction
 from engine.config import Config, DonkeyConfig
 from engine.events import (
     ActionRejected, Component, DepthState, DonkeyDepthChanged, DonkeyMoved, DonkeyMoveStarted, DonkeyRespawned,
-    DonkeyStance, DonkeySwept, DropCause, GameOver, GameOverReason, ItemDropped, LifeLost, RejectReason, Role, Side,
-    StanceReason, SweptCause,
+    DonkeyStance, DonkeySwept, DropCause, GameOver, GameOverReason, ItemDelivered, ItemDropped, ItemStatus, LifeLost,
+    RejectReason, Role, Side, StanceReason, SweptCause,
 )
 from engine.evolve import evolve
-from engine.items import drop_into_water, item_type
+from engine.items import drop_into_water, item_type, set_item
 from engine.stones import temp_at
 from engine.world import walkable
 
@@ -243,6 +243,24 @@ def sweep(tick: Tick, cause: SweptCause, depth: float | None) -> Tick:
         return tick.emit(DonkeyRespawned, col=donkey.col)
     tick = evolve(tick, state=evolve(tick.state, game_over=GameOverReason.LIVES))
     return tick.emit(GameOver, reason=GameOverReason.LIVES, score=tick.state.score)
+
+
+# --- TICK.md step 10 -----------------------------------------------------------------------
+
+def delivery_stage(tick: Tick) -> Tick:
+    """D-10: on the north bank every bagged item is delivered, in id order, and scores its points."""
+    state = tick.state
+    donkey = state.donkey
+    if donkey.row != state.config.map.rows or not (donkey.bag_left.items or donkey.bag_right.items):
+        return tick
+    tick = _set_donkey(tick, evolve(donkey, bag_left=Bag(), bag_right=Bag()))
+    for item_id in sorted(donkey.bag_left.items + donkey.bag_right.items):
+        item = tick.state.items[item_id]
+        points = item_type(state.config.items, item.kind).points
+        tick = set_item(tick, evolve(item, status=ItemStatus.DELIVERED))
+        tick = evolve(tick, state=evolve(tick.state, score=tick.state.score + points))
+        tick = tick.emit(ItemDelivered, item_id=item_id, kind=item.kind, points=points)
+    return tick
 
 
 # --- TICK.md step 11 -----------------------------------------------------------------------

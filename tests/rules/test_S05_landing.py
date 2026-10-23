@@ -83,8 +83,8 @@ def test_out_of_radius():
 def test_a_missed_apple_floats_where_it_landed_even_on_a_stone():
     trace = run(CFG, 1, [THROW, NOOP, NOOP], start=loaded(donkey={"col": 0}))
     assert [(e.item_id, e.row, e.x) for e in of(trace, ItemFloated)] == [(0, 0, 4.0)]
-    item = trace.states[2].items[0]
-    assert (item.status, item.pos) == (ItemStatus.FLOATING, (0, 4.0))
+    item = trace.states[2].items[0]  # it already drifted in step 8 of the landing tick
+    assert (item.status, item.pos) == (ItemStatus.FLOATING, (0, 4.0 + CFG.water.flow_speed_cols_per_tick))
 
 
 def test_a_missed_potato_sinks():

@@ -417,3 +417,12 @@ class ItemSank(Event):
     item_id: int
     row: int
     col: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemDelivered(Event):
+    """TICK.md step 10: an item reached the north bank in a bag (D-10); points go to the score."""
+
+    item_id: int
+    kind: str
+    points: int

@@ -7,8 +7,8 @@ in place. A stage whose rules are not implemented yet returns its Tick unchanged
 
 
 from engine.actions import Actions
-from engine.catching import projectiles_stage
-from engine.donkey import depth_stage, donkey_stage, expire_stance
+from engine.catching import floating_stage, projectiles_stage
+from engine.donkey import delivery_stage, depth_stage, donkey_stage, expire_stance
 from engine.events import Event, GameOver, GameOverReason
 from engine.evolve import evolve
 from engine.items import bank_stage
@@ -105,9 +105,9 @@ def _depth(tick: Tick) -> Tick:
 def _floating_items(tick: Tick) -> Tick:
     """TICK.md step 8: floating items. Rules: I-04, I-05.
 
-    Not implemented yet (Phase 0 step 7).
+    engine/catching.py: the donkey catches floating items, the rest drift east and may leave the map.
     """
-    return tick
+    return floating_stage(tick)
 
 
 def _bank(tick: Tick) -> Tick:
@@ -121,9 +121,9 @@ def _bank(tick: Tick) -> Tick:
 def _delivery(tick: Tick) -> Tick:
     """TICK.md step 10: delivery. Rules: D-10.
 
-    Not implemented yet (Phase 0 step 7).
+    engine/donkey.py: everything in the bags on the north bank is delivered and scored.
     """
-    return tick
+    return delivery_stage(tick)
 
 
 def _clock(tick: Tick) -> Tick:
