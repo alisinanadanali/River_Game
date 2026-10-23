@@ -79,8 +79,9 @@ Durağan dağılım: N(μ, σ²/(1 − (1 − θ)²)). Varsayılanla std ≈ 6,4
 config: `water.ou_theta_per_tick`, `water.ou_mu_cm`, `water.ou_sigma_cm`
 
 **W-02 Dalga varışı (Poisson).** Her tick `N_t ~ Poisson(λ)` dalga doğar; genlik `A ~ Üstel(ortalama ā)`.
-Doğuş konumu `x = −k_spawn · s` (profil haritaya yumuşakça girer). N_t, λ = 0 olsa da her tick çekilir; genlikler
-N_t adet üstel çekilişle aynı çağrıda alınır. Dalga kimlikleri doğuş sırasıyla artar (`Water.next_wave_id`),
+Doğuş konumu `x = −k_spawn · s` (profil haritaya yumuşakça girer). N_t her tick çekilir; genlikler N_t adet üstel
+çekilişle aynı çağrıda alınır. (numpy, λ = 0'da Poisson için sayı tüketmez; çekiliş miktarı yine yalnız
+config'e ve akışa bağlıdır, eyleme bağlı değildir — INV-03'ün istediği budur.) Dalga kimlikleri doğuş sırasıyla artar (`Water.next_wave_id`),
 baraj dalgaları (W-05) da aynı sayacı kullanır.
 config: `water.wave_rate_per_tick`, `water.wave_amp_mean_cm`, `water.wave_spawn_offset_widths`
 

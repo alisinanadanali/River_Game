@@ -30,7 +30,8 @@ def test_two_runs_give_identical_bytes():
 
 def test_the_log_is_not_empty():
     # Guards the test above: two empty logs are trivially identical.
-    assert run(CFG, 42, GAME).jsonl.startswith(b'{"reason":"time"')
+    log = run(CFG, 42, GAME).jsonl
+    assert b'"type":"WaveSpawned"' in log and log.endswith(b'"type":"GameOver"}\n')
 
 
 @pytest.mark.parametrize("profile", ["warmup", "percolation_edge", "hard"])

@@ -46,6 +46,23 @@ class GameOver(Event):
     score: int
 
 
+@dataclass(frozen=True, kw_only=True)
+class WaveSpawned(Event):
+    """TICK.md steps 2 (manual dam release) and 5: a new wave (W-02 upstream, W-05 dam)."""
+
+    wave_id: int
+    amplitude: float  # cm
+    x: float          # columns
+    origin: WaveOrigin
+
+
+@dataclass(frozen=True, kw_only=True)
+class WaveExited(Event):
+    """TICK.md step 5(g): the wave passed (C − 1) + k_cull·s and was removed (W-03)."""
+
+    wave_id: int
+
+
 def event_to_json(event: Event) -> str:
     """ADR-010: one event as one canonical JSON line (no trailing newline)."""
     return canonical_json({"type": event.type, **dataclasses.asdict(event)})

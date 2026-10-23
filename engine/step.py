@@ -12,6 +12,7 @@ from engine.events import Event, GameOver, GameOverReason
 from engine.rng import Rngs, draw_blocks
 from engine.state import GameState
 from engine.tick import Tick
+from engine.water import water_stage
 
 
 class GameFinishedError(RuntimeError):
@@ -74,9 +75,9 @@ def _projectiles(tick: Tick) -> Tick:
 def _water(tick: Tick) -> Tick:
     """TICK.md step 5: water. Rules: W-01 … W-07.
 
-    Not implemented yet (Phase 0 step 6).
+    engine/water.py: base level, waves, dam accumulation, absorption and burst, column levels.
     """
-    return tick
+    return water_stage(tick)
 
 
 def _stones(tick: Tick) -> Tick:

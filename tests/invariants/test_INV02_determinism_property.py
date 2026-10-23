@@ -44,4 +44,4 @@ def test_any_seed_plays_a_full_game(seed):
     # Every game runs to its length and ends by time exactly once (no rule can end it by lives yet).
     trace = run(CFG, seed, [Actions()] * TICKS)
     assert [s.t for s in trace.states] == list(range(1, TICKS + 1))
-    assert [(e.type, e.t) for e in trace.events] == [("GameOver", TICKS - 1)]
+    assert [(e.type, e.t) for e in trace.events if e.type == "GameOver"] == [("GameOver", TICKS - 1)]

@@ -111,7 +111,8 @@ def test_one_tick_game():
 def test_full_default_game_ends_at_its_length():
     trace = run(CFG, 42, [Actions()] * CFG.time.game_length_ticks)
     assert trace.states[-1].t == CFG.time.game_length_ticks
-    assert [e.type for e in trace.events] == ["GameOver"]
+    assert [e.type for e in trace.events if e.type == "GameOver"] == ["GameOver"]
+    assert trace.events[-1].type == "GameOver"
 
 
 # --- skeleton: no rule reads the actions yet ---------------------------------------------------
