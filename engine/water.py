@@ -7,13 +7,14 @@ small pure function; water_stage chains them in the TICK.md step 5 sub-order and
 from __future__ import annotations
 
 import dataclasses
+import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from engine.config import Config, WaterConfig
-from engine.events import WaveExited, WaveOrigin, WaveSpawned
+from engine.events import DamReleased, ReleaseReason, WaveAbsorbed, WaveExited, WaveOrigin, WaveSpawned
 from engine.rng import Rngs, draw
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports this module
@@ -134,30 +135,104 @@ def column_levels(base_level: float, waves: tuple[Wave, ...], dam: Dam, config: 
     return level
 
 
-def water_stage(tick: Tick) -> Tick:
-    """TICK.md step 5, sub-steps (a) … (h); the dam sub-steps (c) … (e) are W-04 … W-06."""
-    state, cfg = tick.state, tick.state.config
-    water, rngs = state.water, tick.rngs
-    # (a) W-01
-    eps, rngs = draw_noise(rngs)
-    water = dataclasses.replace(water, base_level=ou_step(water.base_level, eps, cfg.water))
-    # (b) W-03
-    water = dataclasses.replace(water, waves=advance_waves(water.waves, cfg.water))
-    # (f) W-02
-    amplitudes, rngs = draw_arrivals(rngs, cfg.water)
-    water, born = spawn_waves(water, amplitudes, cfg.water, tick.t)
-    # (g) W-03
-    kept, gone = cull_waves(water.waves, cfg.map.cols, cfg.water)
-    water = dataclasses.replace(water, waves=kept)
-    # (h) W-07
-    water = dataclasses.replace(water, level=_read_only(column_levels(water.base_level, water.waves, state.dam, cfg)))
+def wave_volume(amplitude: float, water_cfg: WaterConfig) -> float:
+    """W-03: V = A·s·√(2π), cm·columns."""
+    return amplitude * water_cfg.wave_width_cols * math.sqrt(2 * math.pi)
 
-    tick = dataclasses.replace(tick, state=dataclasses.replace(state, water=water), rngs=rngs)
+
+def start_dam(dam: Dam, col: int, t: int) -> Dam:
+    """W-04: open a dam episode at column c_d = col. Called by S-08 (TICK.md step 2a, Phase 0 step 7)."""
+    if dam.active:
+        raise ValueError(f"dam already active at column {dam.col}")
+    return Dam(active=True, col=col, started_at=t)
+
+
+def absorb_waves(waves: tuple[Wave, ...], dam: Dam, water_cfg: WaterConfig) -> tuple[tuple[Wave, ...], tuple[Wave, ...]]:
+    """W-06: (kept, absorbed). Waves have already moved (sub-step b), so x(t) = x − v; absorbed iff x(t) < c_d ≤ x."""
+    if not dam.active:
+        return waves, ()
+    v = water_cfg.wave_speed_cols_per_tick
+    crossed = [w.x - v < dam.col <= w.x for w in waves]
+    return (
+        tuple(w for w, c in zip(waves, crossed, strict=True) if not c),
+        tuple(w for w, c in zip(waves, crossed, strict=True) if c),
+    )
+
+
+def accumulate(dam: Dam, config: Config) -> Dam:
+    """W-04: Q += q_in with q_in = downstream_drop · v, derived here and never stored in the config."""
+    if not dam.active:
+        raise ValueError("only a held dam accumulates")
+    q_in = config.dam.downstream_drop_cm * config.water.wave_speed_cols_per_tick
+    return dataclasses.replace(
+        dam, volume=dam.volume + q_in, accumulated_volume=dam.accumulated_volume + q_in, held_ticks=dam.held_ticks + 1
+    )
+
+
+def release_dam(tick: Tick, reason: ReleaseReason) -> Tick:
+    """W-05: Q leaves as a DAM wave A = Q/(s·√(2π)) at x = c_d; the episode ends, a burst sets burst_lock.
+
+    Emits DamReleased, then WaveSpawned (no wave when Q = 0, e.g. with downstream_drop_cm = 0).
+    """
+    state, cfg = tick.state, tick.state.config
+    dam, water = state.dam, state.water
+    if not dam.active:
+        raise ValueError("only a held dam can be released")
+    amplitude = dam.volume / wave_volume(1.0, cfg.water)
+    born = ()
+    if dam.volume > 0:
+        born = (Wave(id=water.next_wave_id, amplitude=amplitude, x=float(dam.col), origin=WaveOrigin.DAM, spawned_at=tick.t),)
+        water = dataclasses.replace(water, waves=water.waves + born, next_wave_id=water.next_wave_id + 1)
+    tick = dataclasses.replace(
+        tick, state=dataclasses.replace(state, water=water, dam=Dam(burst_lock=reason is ReleaseReason.BURST))
+    )
+    tick = tick.emit(
+        DamReleased, col=dam.col, volume=dam.volume, amplitude=amplitude, accumulated=dam.accumulated_volume,
+        absorbed=dam.absorbed_volume, held_ticks=dam.held_ticks, reason=reason,
+    )
+    for w in born:
+        tick = tick.emit(WaveSpawned, wave_id=w.id, amplitude=w.amplitude, x=w.x, origin=w.origin)
+    return tick
+
+
+def water_stage(tick: Tick) -> Tick:
+    """TICK.md step 5, sub-steps (a) … (h), emitting each sub-step's events in that order."""
+    cfg = tick.state.config
+    # (a) W-01 base level, (b) W-03 waves move
+    eps, rngs = draw_noise(tick.rngs)
+    water = tick.state.water
+    water = dataclasses.replace(
+        water, base_level=ou_step(water.base_level, eps, cfg.water), waves=advance_waves(water.waves, cfg.water)
+    )
+    # (c) W-06 absorption, (d) W-04 accumulation
+    dam = tick.state.dam
+    kept, absorbed = absorb_waves(water.waves, dam, cfg.water)
+    for w in absorbed:
+        volume = wave_volume(w.amplitude, cfg.water)
+        dam = dataclasses.replace(dam, volume=dam.volume + volume, absorbed_volume=dam.absorbed_volume + volume)
+    if dam.active:
+        dam = accumulate(dam, cfg)
+    tick = _set(tick, water=dataclasses.replace(water, waves=kept), dam=dam, rngs=rngs)
+    for w in absorbed:
+        tick = tick.emit(WaveAbsorbed, wave_id=w.id, volume=wave_volume(w.amplitude, cfg.water), dam_col=dam.col)
+    # (e) W-05 burst: Q_max triggers, it does not cap
+    if dam.active and dam.volume >= cfg.dam.q_max_cm_cols:
+        tick = release_dam(tick, ReleaseReason.BURST)
+    # (f) W-02 arrivals, (g) W-03 cull, (h) W-07 levels
+    amplitudes, rngs = draw_arrivals(tick.rngs, cfg.water)
+    water, born = spawn_waves(tick.state.water, amplitudes, cfg.water, tick.t)
+    kept, gone = cull_waves(water.waves, cfg.map.cols, cfg.water)
+    level = column_levels(water.base_level, kept, tick.state.dam, cfg)
+    tick = _set(tick, water=dataclasses.replace(water, waves=kept, level=_read_only(level)), rngs=rngs)
     for w in born:
         tick = tick.emit(WaveSpawned, wave_id=w.id, amplitude=w.amplitude, x=w.x, origin=w.origin)
     for w in gone:
         tick = tick.emit(WaveExited, wave_id=w.id)
     return tick
+
+
+def _set(tick: Tick, *, rngs: Rngs, **state_fields) -> Tick:
+    return dataclasses.replace(tick, state=dataclasses.replace(tick.state, **state_fields), rngs=rngs)
 
 
 def _read_only(array: np.ndarray) -> np.ndarray:

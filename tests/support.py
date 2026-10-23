@@ -1,5 +1,6 @@
 """Shared test helpers: configs with a few values changed, and whole games run through step."""
 
+import dataclasses
 import hashlib
 import itertools
 from collections.abc import Iterable
@@ -9,10 +10,12 @@ import yaml
 
 from engine.actions import Ability, Actions, Aim, DonkeyAction, ShrekAction, ShrekMove
 from engine.config import CONFIG_DIR, Config, build_config, deep_merge
-from engine.events import Event, events_to_jsonl
+from engine.events import Event, ReleaseReason, events_to_jsonl
 from engine.rng import Rngs
 from engine.state import GameState, new_game
 from engine.step import step
+from engine.tick import Tick
+from engine.water import release_dam, start_dam
 
 with open(CONFIG_DIR / "default.yaml", encoding="utf-8") as _f:
     DEFAULT = yaml.safe_load(_f)
@@ -66,3 +69,20 @@ def scripted_actions(n: int) -> list[Actions]:
     ]
     pairs = zip(itertools.cycle(DonkeyAction), itertools.cycle(shrek))
     return [Actions(donkey=d, shrek=s) for d, s in itertools.islice(pairs, n)]
+
+
+def press_dam(state: GameState, hold: bool, col: int) -> tuple[GameState, tuple[Event, ...]]:
+    """Stand-in for S-08 (TICK.md step 2a) until Phase 0 step 7 wires the DAM action into step.
+
+    Call before step(). hold=True starts the dam at `col` unless it is active or burst-locked; hold=False
+    releases an active dam (reason manual) and clears the burst lock. Events carry t = state.t.
+    """
+    dam = state.dam
+    if hold and not dam.active and not dam.burst_lock:
+        return dataclasses.replace(state, dam=start_dam(dam, col, state.t)), ()
+    if not hold and dam.active:
+        tick = release_dam(Tick(state=state, actions=Actions(), rngs=None, t=state.t), ReleaseReason.MANUAL)
+        return tick.state, tick.events
+    if not hold and dam.burst_lock:
+        return dataclasses.replace(state, dam=dataclasses.replace(dam, burst_lock=False)), ()
+    return state, ()

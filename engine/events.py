@@ -38,6 +38,11 @@ class WaveOrigin(StrEnum):
     DAM = "DAM"            # W-05
 
 
+class ReleaseReason(StrEnum):
+    MANUAL = "manual"  # S-08: Shrek let go of DAM (TICK.md step 2a)
+    BURST = "burst"    # W-05: Q reached Q_max (TICK.md step 5e)
+
+
 @dataclass(frozen=True, kw_only=True)
 class GameOver(Event):
     """TICK.md steps 7 (lives) and 11 (time). The tick it ended in is the common field `t`."""
@@ -54,6 +59,28 @@ class WaveSpawned(Event):
     amplitude: float  # cm
     x: float          # columns
     origin: WaveOrigin
+
+
+@dataclass(frozen=True, kw_only=True)
+class WaveAbsorbed(Event):
+    """TICK.md step 5(c): the held dam swallowed a wave crossing c_d (W-06)."""
+
+    wave_id: int
+    volume: float   # cm·columns, A·s·√(2π)
+    dam_col: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class DamReleased(Event):
+    """TICK.md steps 2(a) (manual) and 5(e) (burst): the stored volume leaves as a DAM wave (W-05)."""
+
+    col: int
+    volume: float       # Q released, cm·columns
+    amplitude: float    # of the DAM wave, cm
+    accumulated: float  # this episode's Σ q_in
+    absorbed: float     # this episode's Σ absorbed wave volume
+    held_ticks: int
+    reason: ReleaseReason
 
 
 @dataclass(frozen=True, kw_only=True)
