@@ -11,6 +11,7 @@ from engine.donkey import Donkey, initial_donkey
 from engine.events import GameOverReason
 from engine.rng import Rngs, make_rngs
 from engine.shrek import Shrek, initial_shrek
+from engine.stones import Stones, initial_stones
 from engine.water import Dam, Water, initial_water
 from engine.world import World, generate_world
 
@@ -21,6 +22,7 @@ class GameState:
     world: World                        # the immutable map (M-01 … M-05)
     water: Water                        # W-01 … W-07
     dam: Dam                            # W-04 … W-06, S-08
+    stones: Stones                      # S-07: r_i and temporary stones
     donkey: Donkey                      # D-01 … D-10
     shrek: Shrek                        # S-01 … S-08
     t: int                              # tick counter; the next step processes tick t
@@ -39,6 +41,7 @@ def new_game(config: Config, seed: int) -> tuple[GameState, Rngs]:
         world=world,
         water=initial_water(config),
         dam=Dam(),
+        stones=initial_stones(config),
         donkey=initial_donkey(config),
         shrek=initial_shrek(config),
         t=0,

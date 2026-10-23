@@ -16,6 +16,7 @@ from engine.events import (
     DonkeyStance, DonkeySwept, GameOver, GameOverReason, LifeLost, RejectReason, Role, Side, StanceReason, SweptCause,
 )
 from engine.evolve import evolve
+from engine.stones import temp_at
 from engine.world import walkable
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports this module
@@ -72,15 +73,21 @@ def in_river(donkey: Donkey, rows: int) -> bool:
 
 
 def on_graph(state: GameState, row: int, col: int) -> bool:
-    """M-01, D-05: banks and permanent stones (temporary stones join with S-07)."""
-    return walkable(state.world, row, col)
+    """M-01, D-05: banks, permanent stones and temporary stones (S-07)."""
+    return walkable(state.world, row, col) or (0 <= row < state.world.rows and temp_at(state.stones, row, col) is not None)
 
 
 def stone_under(state: GameState, row: int, col: int) -> tuple[float, float] | None:
-    """D-01: (height before the load, stiffness) of the stone at a river cell, or None if there is none."""
+    """D-01: (height before the load, stiffness) of the stone at a river cell, or None if there is none.
+
+    Permanent stone: h_i + r_i(t) and k_i. Temporary stone: its height h(t) and rock_stiffness_kg_per_cm.
+    """
     world = state.world
     if world.is_stone[row, col]:
-        return float(world.base_h[row, col]), float(world.stiffness[row, col])
+        return float(world.base_h[row, col] + state.stones.raise_h[row, col]), float(world.stiffness[row, col])
+    stone = temp_at(state.stones, row, col)
+    if stone is not None:
+        return stone.h, state.config.shrek.rock_stiffness_kg_per_cm
     return None
 
 

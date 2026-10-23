@@ -90,6 +90,11 @@ class SweptCause(StrEnum):
     STONE_VANISHED = "stone_vanished"  # no stone under the donkey (S-07, D-05)
 
 
+class RaiseTarget(StrEnum):
+    STONE = "stone"            # a permanent stone: r_i += rock_raise_cm
+    TEMP_STONE = "temp_stone"  # a temporary stone: h += rock_raise_cm
+
+
 class ReleaseReason(StrEnum):
     MANUAL = "manual"  # S-08: Shrek let go of DAM (TICK.md step 2a)
     BURST = "burst"    # W-05: Q reached Q_max (TICK.md step 5e)
@@ -242,3 +247,33 @@ class DamStarted(Event):
     """TICK.md step 2(a): Shrek began holding the dam at column c_d = col (S-08, W-04)."""
 
     col: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class TempStoneSpawned(Event):
+    """TICK.md step 2(d): ROCK on water made a temporary stone (S-07)."""
+
+    stone_id: int
+    row: int
+    col: int
+    h: float  # cm, rock_initial_h_cm
+
+
+@dataclass(frozen=True, kw_only=True)
+class TempStoneRaised(Event):
+    """TICK.md step 2(d): ROCK on a stone raised it by delta_cm (S-07)."""
+
+    row: int
+    col: int
+    delta_cm: float
+    target: RaiseTarget
+
+
+@dataclass(frozen=True, kw_only=True)
+class TempStoneVanished(Event):
+    """TICK.md step 6: the temporary stone sank below rock_vanish_h_cm (S-07); a donkey on it is swept in step 7."""
+
+    stone_id: int
+    row: int
+    col: int
+    under_donkey: bool

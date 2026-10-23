@@ -13,6 +13,7 @@ from engine.actions import Ability, Aim, ShrekMove
 from engine.config import Config
 from engine.events import DamStarted, ReleaseReason, ShrekAimed, ShrekMoved
 from engine.evolve import evolve
+from engine.stones import throw_rock
 from engine.water import release_dam, start_dam
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports this module
@@ -61,18 +62,26 @@ def aim_cell(shrek: Shrek) -> tuple[int, int]:
 
 
 def shrek_stage(tick: Tick) -> Tick:
-    """TICK.md step 2: (a) dam, (b) walk, (c) aim. (d) abilities arrive with S-04 and S-07."""
+    """TICK.md step 2: (a) dam, (b) walk, (c) aim, (d) ability. THROW arrives with S-04."""
     tick = dam_stage(tick)
     cfg, shrek, action = tick.state.config, tick.state.shrek, tick.actions.shrek
     col = walk(shrek.col, action.move, cfg.map.cols)
     row = aim(shrek.aim_row, action.aim, cfg.map.rows)
-    if (col, row) == (shrek.col, shrek.aim_row):
-        return tick  # most ticks: nothing to copy
-    tick = _set_shrek(tick, evolve(shrek, col=col, aim_row=row))
-    if col != shrek.col:
-        tick = tick.emit(ShrekMoved, from_col=shrek.col, to_col=col)
-    if row != shrek.aim_row:
-        tick = tick.emit(ShrekAimed, row=row)
+    if (col, row) != (shrek.col, shrek.aim_row):  # most ticks: nothing to copy
+        tick = _set_shrek(tick, evolve(shrek, col=col, aim_row=row))
+        if col != shrek.col:
+            tick = tick.emit(ShrekMoved, from_col=shrek.col, to_col=col)
+        if row != shrek.aim_row:
+            tick = tick.emit(ShrekAimed, row=row)
+    return ability_stage(tick)
+
+
+def ability_stage(tick: Tick) -> Tick:
+    """TICK.md step 2(d): ROCK lands on the aim cell now (S-07) and starts its cooldown (S-03)."""
+    shrek, cfg = tick.state.shrek, tick.state.config
+    if tick.actions.shrek.ability is Ability.ROCK:
+        tick = throw_rock(tick, *aim_cell(shrek))
+        return _set_shrek(tick, evolve(shrek, rock_cooldown=cfg.shrek.rock_cooldown_ticks))
     return tick
 
 

@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING
 from engine.actions import Ability, DonkeyAction, ShrekMove
 from engine.events import ActionRejected, Component, RejectReason, Role
 from engine.evolve import evolve
+from engine.shrek import aim, walk
+from engine.stones import temp_at
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports engine/donkey.py
     from engine.tick import Tick
@@ -48,9 +50,22 @@ def _validate_shrek(tick: Tick) -> Tick:
     if cooldown.get(valid.ability, 0) > 0:
         tick = _reject(tick, Component.ABILITY, RejectReason.COOLDOWN)
         valid = evolve(valid, ability=Ability.NONE)
+    if valid.ability is Ability.ROCK and _rock_would_exceed_limit(tick, valid):
+        tick = _reject(tick, Component.ABILITY, RejectReason.ROCK_LIMIT)
+        valid = evolve(valid, ability=Ability.NONE)
     if valid is action:
         return tick
     return evolve(tick, actions=evolve(tick.actions, shrek=valid))
+
+
+def _rock_would_exceed_limit(tick: Tick, action) -> bool:
+    """S-07: a rock on water when rock_max_active temporary stones exist. The target is this tick's aim cell
+    after walking and aiming (TICK.md step 2b, 2c), worked out here in advance."""
+    state, cfg = tick.state, tick.state.config
+    col = walk(state.shrek.col, action.move, cfg.map.cols)
+    row = aim(state.shrek.aim_row, action.aim, cfg.map.rows)
+    on_water = not state.world.is_stone[row, col] and temp_at(state.stones, row, col) is None
+    return on_water and len(state.stones.temp) >= cfg.shrek.rock_max_active
 
 
 def _reject(tick: Tick, component: Component, reason: RejectReason) -> Tick:

@@ -13,6 +13,7 @@ from engine.evolve import evolve
 from engine.rng import Rngs, draw_blocks
 from engine.shrek import cool_down, shrek_stage
 from engine.state import GameState
+from engine.stones import stones_stage
 from engine.tick import Tick
 from engine.validation import validate_stage
 from engine.water import water_stage
@@ -86,9 +87,9 @@ def _water(tick: Tick) -> Tick:
 def _stones(tick: Tick) -> Tick:
     """TICK.md step 6: stones. Rules: S-07.
 
-    Not implemented yet (Phase 0 step 7).
+    engine/stones.py: temporary stones sink and vanish, raises on permanent stones decay.
     """
-    return tick
+    return stones_stage(tick)
 
 
 def _depth(tick: Tick) -> Tick:

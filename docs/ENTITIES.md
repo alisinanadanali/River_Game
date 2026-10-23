@@ -42,12 +42,14 @@ Kalıcı taşların dinamik kısmı ve geçici taşlar tek alt durumdadır (dalg
 
 ## TempStone (geçici taş)
 
+Kodda `engine/stones.py`; kimlikler `Stones.next_temp_id`'den, doğuş sırasıyla.
+
 | Alan | Tip | Birim | Aralık | Açıklama |
 |---|---|---|---|---|
 | `id` | int | — | — | Benzersiz kimlik |
 | `row`, `col` | int | hücre | ızgara içi | Konum (yalnız su hücresi) |
 | `h` | float | cm | > `rock_vanish_h_cm` | Anlık yükseklik; her tick `rock_sink_cm_per_tick` azalır |
-| `stiffness` | float | kg/cm | > 0 | `rock_stiffness_kg_per_cm` |
+| (sertlik) | — | kg/cm | > 0 | Saklanmaz: `shrek.rock_stiffness_kg_per_cm` |
 | `spawned_at` | int | tick | — | — |
 
 ## Water
