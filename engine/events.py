@@ -90,6 +90,24 @@ class SweptCause(StrEnum):
     STONE_VANISHED = "stone_vanished"  # no stone under the donkey (S-07, D-05)
 
 
+class ItemStatus(StrEnum):
+    """I-03, ENTITIES.md item life cycle."""
+
+    ON_BANK = "ON_BANK"
+    IN_FLIGHT = "IN_FLIGHT"
+    IN_BAG = "IN_BAG"
+    FLOATING = "FLOATING"
+    DELIVERED = "DELIVERED"
+    LOST = "LOST"
+
+
+class LostReason(StrEnum):
+    BANK_OVERFLOW = "bank_overflow"  # I-02
+    SANK = "sank"                    # I-04
+    DRIFTED_OFF = "drifted_off"      # I-04
+    OFF_MAP = "off_map"              # S-05
+
+
 class RaiseTarget(StrEnum):
     STONE = "stone"            # a permanent stone: r_i += rock_raise_cm
     TEMP_STONE = "temp_stone"  # a temporary stone: h += rock_raise_cm
@@ -277,3 +295,21 @@ class TempStoneVanished(Event):
     row: int
     col: int
     under_donkey: bool
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemArrived(Event):
+    """TICK.md step 9: a new item at the bank (I-01); queue_len is the queue length after it was handled (I-02)."""
+
+    item_id: int
+    kind: str
+    queue_len: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemLost(Event):
+    """TICK.md steps 3, 4, 7, 8, 9: the item is gone for good. origin is its status before (None on arrival)."""
+
+    item_id: int
+    reason: LostReason
+    origin: ItemStatus | None

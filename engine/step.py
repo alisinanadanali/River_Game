@@ -10,6 +10,7 @@ from engine.actions import Actions
 from engine.donkey import depth_stage, donkey_stage, expire_stance
 from engine.events import Event, GameOver, GameOverReason
 from engine.evolve import evolve
+from engine.items import bank_stage
 from engine.rng import Rngs, draw_blocks
 from engine.shrek import cool_down, shrek_stage
 from engine.state import GameState
@@ -111,9 +112,9 @@ def _floating_items(tick: Tick) -> Tick:
 def _bank(tick: Tick) -> Tick:
     """TICK.md step 9: bank. Rules: I-01, I-02.
 
-    Not implemented yet (Phase 0 step 7).
+    engine/items.py: arrivals from rng_items join the FIFO queue or are lost when it is full.
     """
-    return tick
+    return bank_stage(tick)
 
 
 def _delivery(tick: Tick) -> Tick:

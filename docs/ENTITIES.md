@@ -121,6 +121,8 @@ Kodda `engine/shrek.py`; başlangıçta `col = ⌊C/2⌋`, `aim_row = 0` (S-01, 
 
 ## Item
 
+Kodda `engine/items.py`; `GameState.items[i].id == i`, yükler silinmez (I-01, INV-01).
+
 | Alan | Tip | Birim | Açıklama |
 |---|---|---|---|
 | `id` | int | — | Doğuş sırasına göre artan |
