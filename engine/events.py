@@ -98,3 +98,18 @@ def event_to_json(event: Event) -> str:
 def events_to_jsonl(events: Iterable[Event]) -> str:
     """ADR-010: events as JSONL text, one line per event, each line ending in a newline."""
     return "".join(event_to_json(event) + "\n" for event in events)
+
+
+@dataclass(frozen=True, kw_only=True)
+class ShrekMoved(Event):
+    """TICK.md step 2(b): Shrek walked one column along the south bank (S-01)."""
+
+    from_col: int
+    to_col: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class ShrekAimed(Event):
+    """TICK.md step 2(c): the aim row changed (S-02)."""
+
+    row: int

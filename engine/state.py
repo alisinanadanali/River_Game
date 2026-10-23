@@ -1,14 +1,16 @@
 """GameState (ENTITIES.md): everything that changes during a game, as one immutable value.
 
-Fields are added together with the rules that need them (donkey, Shrek and items in step 7). The RNG streams
+Fields are added together with the rules that need them. The RNG streams
 are not part of the state: step takes and returns them separately (ADR-011).
 """
 
 from dataclasses import dataclass, field
 
 from engine.config import Config
+from engine.donkey import Donkey, initial_donkey
 from engine.events import GameOverReason
 from engine.rng import Rngs, make_rngs
+from engine.shrek import Shrek, initial_shrek
 from engine.water import Dam, Water, initial_water
 from engine.world import World, generate_world
 
@@ -19,6 +21,8 @@ class GameState:
     world: World                        # the immutable map (M-01 … M-05)
     water: Water                        # W-01 … W-07
     dam: Dam                            # W-04 … W-06, S-08
+    donkey: Donkey                      # D-01 … D-10
+    shrek: Shrek                        # S-01 … S-08
     t: int                              # tick counter; the next step processes tick t
     score: int                          # Σ delivered points (D-10)
     game_over: GameOverReason | None    # set once, by TICK.md step 7 (lives) or step 11 (time)
@@ -31,6 +35,14 @@ def new_game(config: Config, seed: int) -> tuple[GameState, Rngs]:
     """
     world, rngs = generate_world(config.map, seed, make_rngs(seed))
     state = GameState(
-        config=config, world=world, water=initial_water(config), dam=Dam(), t=0, score=0, game_over=None
+        config=config,
+        world=world,
+        water=initial_water(config),
+        dam=Dam(),
+        donkey=initial_donkey(config),
+        shrek=initial_shrek(config),
+        t=0,
+        score=0,
+        game_over=None,
     )
     return state, rngs

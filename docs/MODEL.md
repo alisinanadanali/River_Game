@@ -154,7 +154,7 @@ config: `donkey.slip_base_prob`, `donkey.slip_kappa`
 | d₀ ≤ d < d₁ | ANKLE |
 | d₁ ≤ d < d₂ | KNEE |
 | d ≥ d₂ | SWEPT |
-Kıyıda d tanımsızdır (`depth = NaN`), durum DRY'dır. Eşek taşsız bir nehir hücresindeyse (altındaki geçici taş
+Kıyıda d tanımsızdır (`depth = None`; skaler `NaN` dataclass eşitliğini bozardı, `nan != nan`), durum DRY'dır. Eşek taşsız bir nehir hücresindeyse (altındaki geçici taş
 kayboldu, S-07, ya da yavaş hareketin hedefi kayboldu, D-05) durum doğrudan SWEPT olur
 (`DonkeySwept(cause=stone_vanished)`, `depth_cm = null`). Durum DRY/ANKLE/KNEE arasında değişince
 `DonkeyDepthChanged` yayılır; SWEPT için `DonkeySwept` yayılır, `DonkeyDepthChanged` yayılmaz.

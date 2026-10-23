@@ -10,6 +10,7 @@ import dataclasses
 from engine.actions import Actions
 from engine.events import Event, GameOver, GameOverReason
 from engine.rng import Rngs, draw_blocks
+from engine.shrek import shrek_stage
 from engine.state import GameState
 from engine.tick import Tick
 from engine.water import water_stage
@@ -51,9 +52,9 @@ def _validate_actions(tick: Tick) -> Tick:
 def _shrek_actions(tick: Tick) -> Tick:
     """TICK.md step 2: Shrek's actions. Rules: S-01, S-02, S-04, S-06, S-07, S-08, W-05.
 
-    Not implemented yet (Phase 0 step 7).
+    engine/shrek.py: (b) walk and (c) aim so far.
     """
-    return tick
+    return shrek_stage(tick)
 
 
 def _donkey_action(tick: Tick) -> Tick:

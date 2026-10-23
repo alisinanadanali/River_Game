@@ -83,11 +83,13 @@ Kalıcı taşların dinamik kısmı ve geçici taşlar tek alt durumdadır (dalg
 
 ## Donkey
 
+Kodda `engine/donkey.py`; başlangıçta `(−1, ⌊C/2⌋)`, DRY, `lives = time.lives` (D-05, D-07).
+
 | Alan | Tip | Birim | Aralık | Açıklama |
 |---|---|---|---|---|
 | `row`, `col` | int | hücre | r ∈ [−1, R] | Konum |
 | `depth_state` | enum | — | DRY/ANKLE/KNEE | Son hesaplanan durum (D-04) |
-| `depth` | float | cm | — | Son hesaplanan d; kıyıda `NaN` |
+| `depth` | float \| None | cm | — | Son hesaplanan d; kıyıda `None` |
 | `move_target` | (int,int) \| None | — | — | Süren yavaş hareketin hedefi (D-05) |
 | `move_remaining` | int | tick | ≥ 0 | Yavaş hareketin kalan süresi |
 | `stance` | enum | — | NONE/LEFT/RIGHT | Yakalama duruşu (D-08) |
@@ -104,6 +106,8 @@ Kalıcı taşların dinamik kısmı ve geçici taşlar tek alt durumdadır (dalg
 | `volume` | int | hacim | ≤ `bag_max_volume_per_side` | Türetilir |
 
 ## Shrek
+
+Kodda `engine/shrek.py`; başlangıçta `col = ⌊C/2⌋`, `aim_row = 0` (S-01, S-02).
 
 | Alan | Tip | Birim | Aralık | Açıklama |
 |---|---|---|---|---|
@@ -143,8 +147,7 @@ Kalıcı taşların dinamik kısmı ve geçici taşlar tek alt durumdadır (dalg
 
 ## GameState
 
-Kodda `engine/state.py`. Alanlar, onları kullanan kurallarla birlikte eklenir (şu an `config`, `world`, `t`,
-`score`, `game_over`). Başlangıç durumu `new_game(config, seed) -> (state, rngs)` ile kurulur: harita
+Kodda `engine/state.py`. Alanlar, onları kullanan kurallarla birlikte eklenir. Başlangıç durumu `new_game(config, seed) -> (state, rngs)` ile kurulur: harita
 (M-05) üretilir ve `rngs` içinde `rng_world` ilerlemiş olarak döner.
 
 | Alan | Tip | Açıklama |
