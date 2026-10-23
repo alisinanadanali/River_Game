@@ -69,5 +69,7 @@ uv run python main.py                 # Phase 1: pygame-ce game
 ## Current phase
 Phase 0 in progress (see `docs/ROADMAP.md`). Done: toolchain, ghosting test, INV-07, config, RNG, walking
 skeleton (`engine/step.py` pipeline + INV-02), world generation (`engine/world.py`, M-01 … M-05),
-water and dam physics (`engine/water.py`, W-01 … W-07, INV-03/04/08-Q). Next: step 7 rules (S-, D-, I-);
-S-08 replaces `tests/support.py:press_dam`.
+water and dam physics (`engine/water.py`, W-01 … W-07), all S-, D-, I- rules (`engine/validation.py`,
+`shrek.py`, `donkey.py`, `stones.py`, `items.py`, `catching.py`; imports one-way: items ← donkey ← catching) and
+INV-01 … INV-08 under random play. State copies use `engine/evolve.py`. Next: step 9 `engine/observe.py`, then
+10 tactical CLI, 11 design_calcs, 12 performance, 14 v0.1.0.
