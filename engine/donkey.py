@@ -13,7 +13,7 @@ from engine.actions import DonkeyAction
 from engine.config import Config, DonkeyConfig
 from engine.events import (
     ActionRejected, Component, DepthState, DonkeyDepthChanged, DonkeyMoved, DonkeyMoveStarted, DonkeyRespawned,
-    DonkeyStance, DonkeySwept, DropCause, GameOver, GameOverReason, ItemDelivered, ItemDropped, ItemStatus, LifeLost,
+    DonkeySlipped, DonkeyStance, DonkeySwept, DropCause, GameOver, GameOverReason, ItemDelivered, ItemDropped, ItemStatus, LifeLost,
     RejectReason, Role, Side, StanceReason, SweptCause,
 )
 from engine.evolve import evolve
@@ -139,6 +139,26 @@ def with_bag(donkey: Donkey, side: Side, bag: Bag) -> Donkey:
     return evolve(donkey, bag_left=bag) if side is Side.LEFT else evolve(donkey, bag_right=bag)
 
 
+def balance(donkey: Donkey, config: Config) -> float:
+    """D-02: δ = (m_R − m_L) / (m_R + m_L + m_D), in (−1, 1)."""
+    left, right = donkey.bag_left.mass, donkey.bag_right.mass
+    return (right - left) / (right + left + config.donkey.mass_kg)
+
+
+def heavy_side(delta: float, u: float) -> Side:
+    """D-02: RIGHT for δ > 0, LEFT for δ < 0; δ = 0 is a coin, u < 0.5 → LEFT."""
+    if delta > 0:
+        return Side.RIGHT
+    if delta < 0:
+        return Side.LEFT
+    return Side.LEFT if u < 0.5 else Side.RIGHT
+
+
+def slip_probability(delta: float, mu: float, donkey_cfg: DonkeyConfig) -> float:
+    """D-03: p_slip = min(1, p₀ + κ·δ²·μ)."""
+    return min(1.0, donkey_cfg.slip_base_prob + donkey_cfg.slip_kappa * delta * delta * mu)
+
+
 def stance_ready(donkey: Donkey, t: int) -> bool:
     """D-08: a stance catches only in ticks after the one it was taken in."""
     return donkey.stance is not Side.NONE and t > donkey.stance_since
@@ -161,7 +181,8 @@ def donkey_stage(tick: Tick) -> Tick:
 
 
 def _start_move(tick: Tick, action: DonkeyAction) -> Tick:
-    """D-05: off the graph → ActionRejected(no_stone); else the stance ends and the move is done or begun."""
+    """D-05: off the graph → ActionRejected(no_stone); else the stance ends, D-03 may slip, and the move is done
+    or begun."""
     donkey, cfg = tick.state.donkey, tick.state.config
     dr, dc = MOVES[action]
     target = (donkey.row + dr, donkey.col + dc)
@@ -170,11 +191,49 @@ def _start_move(tick: Tick, action: DonkeyAction) -> Tick:
     if donkey.stance is not Side.NONE:
         donkey = evolve(donkey, stance=Side.NONE, stance_since=None)
         tick = _set_donkey(tick, donkey).emit(DonkeyStance, side=Side.NONE, reason=StanceReason.MOVED)
+    tick = _maybe_slip(tick)
+    donkey = tick.state.donkey  # a slip lightens a bag
     slow = cfg.donkey.slow_move_ticks
     if donkey.depth_state is DepthState.DRY or slow == 1:
         return _arrive(tick, donkey, target)
     tick = _set_donkey(tick, evolve(donkey, move_target=target, move_remaining=slow - 1))
     return tick.emit(DonkeyMoveStarted, from_cell=(donkey.row, donkey.col), to_cell=target, ticks=slow)
+
+
+def _maybe_slip(tick: Tick) -> Tick:
+    """D-03 (u_slip[0], side u_slip[1]): only leaving a stone, only with something in the bags."""
+    state = tick.state
+    donkey, cfg = state.donkey, state.config
+    if not in_river(donkey, cfg.map.rows) or not (donkey.bag_left.items or donkey.bag_right.items):
+        return tick
+    mossy = bool(state.world.is_stone[donkey.row, donkey.col] and state.world.mossy[donkey.row, donkey.col])
+    delta = balance(donkey, cfg)
+    p = slip_probability(delta, cfg.map.mossy_slip_multiplier if mossy else 1.0, cfg.donkey)
+    if not tick.u_slip[0] < p:
+        return tick
+    side = heavy_side(delta, float(tick.u_slip[1]))
+    tick = tick.emit(DonkeySlipped, side=side, p_slip=p, delta=delta, mossy=mossy)
+    return drop_top(tick, side, DropCause.SLIP)
+
+
+def drop_top(tick: Tick, side: Side, cause: DropCause) -> Tick:
+    """D-03, D-06: the top item of `side` falls into the water of the donkey's cell (I-04)."""
+    state = tick.state
+    donkey = state.donkey
+    bag = bag_of(donkey, side)
+    t = item_type(state.config.items, state.items[bag.items[-1]].kind)
+    item_id, rest = pop(bag, t.mass_kg, t.volume)
+    tick = _set_donkey(tick, with_bag(donkey, side, rest))
+    tick = tick.emit(ItemDropped, item_id=item_id, side=side, cause=cause)
+    return drop_into_water(tick, item_id, donkey.row, float(donkey.col))
+
+
+def _knee_drop(tick: Tick) -> Tick:
+    """D-06 (u_slip[2], side u_slip[3]): in KNEE the heavy side may lose its top item."""
+    donkey, cfg = tick.state.donkey, tick.state.config
+    if not (donkey.bag_left.items or donkey.bag_right.items) or not tick.u_slip[2] < cfg.donkey.knee_drop_prob:
+        return tick
+    return drop_top(tick, heavy_side(balance(donkey, cfg), float(tick.u_slip[3])), DropCause.KNEE)
 
 
 def _continue_move(tick: Tick) -> Tick:
@@ -196,7 +255,7 @@ def _arrive(tick: Tick, donkey: Donkey, target: tuple[int, int]) -> Tick:
 # --- TICK.md step 7 ------------------------------------------------------------------------
 
 def depth_stage(tick: Tick) -> Tick:
-    """TICK.md step 7: D-01 e, D-04 d and state; SWEPT → D-07."""
+    """TICK.md step 7: D-01 e, D-04 d and state; KNEE → D-06; SWEPT → D-07."""
     state = tick.state
     donkey, cfg = state.donkey, state.config
     if not in_river(donkey, cfg.map.rows):
@@ -209,7 +268,8 @@ def depth_stage(tick: Tick) -> Tick:
     new = classify_depth(d, cfg.donkey)
     if new is DepthState.SWEPT:
         return sweep(tick, SweptCause.DEPTH, d)
-    return _set_depth(tick, new, d)
+    tick = _set_depth(tick, new, d)
+    return _knee_drop(tick) if new is DepthState.KNEE else tick
 
 
 def _set_depth(tick: Tick, new: DepthState, d: float | None) -> Tick:

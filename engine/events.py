@@ -426,3 +426,13 @@ class ItemDelivered(Event):
     item_id: int
     kind: str
     points: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class DonkeySlipped(Event):
+    """TICK.md step 3: the donkey slipped starting a move (D-03); the top item of `side` falls (ItemDropped)."""
+
+    side: Side
+    p_slip: float
+    delta: float   # δ, D-02
+    mossy: bool    # left a mossy permanent stone
