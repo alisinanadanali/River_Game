@@ -65,8 +65,9 @@ dağılımı) yalnızca `ItemLost`'u kullanır; `ItemSank` görsel/ses içindir.
 | `TempStoneVanished` | `stone_id`, `row`, `col`, `under_donkey` | 6 | R, L, U |
 | `DamStarted` | `col` | 2 | R, L, U |
 | `DamReleased` | `col`, `volume`, `amplitude`, `accumulated`, `absorbed`, `held_ticks`, `reason` (`manual`/`burst`) | 2, 5 | R, L, U |
-| `WaveSpawned` | `wave_id`, `amplitude`, `x`, `origin` (`UPSTREAM`/`DAM`) | 5 | R, L, U |
+| `WaveSpawned` | `wave_id`, `amplitude`, `x`, `origin` (`UPSTREAM`/`DAM`) | 2, 5 | R, L, U |
 | `WaveAbsorbed` | `wave_id`, `volume`, `dam_col` | 5 | R, L, U |
+| `WaveExited` | `wave_id` (doğu kenarını `C−1+k_cull·s` kadar geçti, W-03) | 5 | R, L, U |
 
 Dalga konumları olaylarda her tick yayılmaz; `WaveSpawned` + config (v) ile kinematik olarak yeniden
 hesaplanabilir (dalgalar deterministik ilerler). Render konumu doğrudan durumdan okur.

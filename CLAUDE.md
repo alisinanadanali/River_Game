@@ -58,7 +58,8 @@ Changing the tick order or any ADR decision requires a new/updated ADR in `docs/
 ## Commands (from Phase 0 on)
 ```
 uv sync                               # install
-uv run pytest                         # all tests
+uv run pytest                         # all tests, hypothesis profile `dev` (fast)
+HYPOTHESIS_PROFILE=full uv run pytest # ROADMAP acceptance (>= 200 seeds); before a push
 uv run pytest tests/rules -k W05      # one rule
 uv run python -m tools.tactical_cli --seed 42 --profile percolation_edge
 uv run python -m tools.design_calcs   # re-check MODEL.md Appendix A

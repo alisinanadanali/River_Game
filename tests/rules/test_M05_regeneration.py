@@ -1,7 +1,7 @@
 """M-05: attempt i uses the i-th consecutive block of rng_world; the first attempt meeting M-04 is the map."""
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from engine.config import load_config
@@ -73,7 +73,6 @@ def test_last_allowed_attempt_is_used():
         generate_world(too_few, seed, make_rngs(seed))
 
 
-@settings(max_examples=100, deadline=None)
 @given(seed=st.integers(min_value=0, max_value=2**64 - 1), profile=st.sampled_from(["warmup", "percolation_edge", "hard"]))
 def test_every_profile_map_meets_its_guarantee(seed, profile):
     cfg = load_config(profile).map

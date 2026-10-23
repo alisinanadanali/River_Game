@@ -15,10 +15,10 @@ buradaki bir sıra ya da kural değişikliği kodda yapılmazsa test kırmızı 
 |---|---|---|---|---|
 | 0 | RNG blokları çekilir | R-02 | `rng_throw`, `rng_slip` | — |
 | 1 | Eylem doğrulama | S-03, D-05, S-08 | — | `ActionRejected` |
-| 2 | Shrek eylemleri | S-01, S-02, S-04, S-06, S-07, S-08, W-05 | `rng_throw` (blok) | `ShrekMoved`, `ShrekAimed`, `ItemThrown`, `TempStoneSpawned`, `TempStoneRaised`, `DamStarted`, `DamReleased` |
+| 2 | Shrek eylemleri | S-01, S-02, S-04, S-06, S-07, S-08, W-05 | `rng_throw` (blok) | `ShrekMoved`, `ShrekAimed`, `ItemThrown`, `TempStoneSpawned`, `TempStoneRaised`, `DamStarted`, `DamReleased`, `WaveSpawned(DAM)` |
 | 3 | Eşek eylemi | D-02, D-03, D-05, D-08 | `rng_slip` (blok) | `DonkeyMoved`, `DonkeyMoveStarted`, `DonkeySlipped`, `ItemDropped`, `DonkeyStance`, `ItemFloated`, `ItemSank`, `ItemLost` |
 | 4 | Mermiler | S-04, S-05, S-06, D-08, D-09, I-04 | — | `ItemCaught`, `ItemMissed`, `ItemBounced`, `ItemReturnedToBank`, `ItemFloated`, `ItemSank`, `ItemLost` |
-| 5 | Su | W-01 … W-07 | `rng_water` | `WaveSpawned`, `WaveAbsorbed`, `DamReleased(burst)` |
+| 5 | Su | W-01 … W-07 | `rng_water` | `WaveSpawned`, `WaveAbsorbed`, `DamReleased(burst)`, `WaveExited` |
 | 6 | Taşlar | S-07 | — | `TempStoneVanished` |
 | 7 | Derinlik | D-01, D-04, D-06, D-07 | `rng_slip` (blok) | `DonkeyDepthChanged`, `ItemDropped`, `DonkeySwept`, `LifeLost`, `DonkeyRespawned`, `GameOver(lives)` |
 | 8 | Yüzen yükler | I-04, I-05 | — | `ItemCaught(floating)`, `ItemLost(drifted_off)` |
@@ -74,7 +74,8 @@ Alt sıra: **(a)** baraj bırakma/başlatma → **(b)** yürüme → **(c)** ni�
 
 ### 5. Su
 Alt sıra: **(a)** OU adımı → **(b)** dalgalar ilerler → **(c)** emilim (W-06) → **(d)** birikim (W-04) →
-**(e)** patlama kontrolü (W-05) → **(f)** yeni dalgalar doğar (W-02) → **(g)** silme (W-03) → **(h)** L(c) (W-07).
+**(e)** patlama kontrolü (W-05) → **(f)** yeni dalgalar doğar (W-02) → **(g)** silme (W-03, `WaveExited`) → **(h)** L(c) (W-07).
+- **Kodda:** `engine/water.py` `water_stage`; her alt adım ayrı, saf bir fonksiyondur.
 - **RNG:** `rng_water`: 1 normal, 1 Poisson, N_t üstel. Çekiliş (a) ve (f)'de yapılır; baraj durumu çekiliş
   sayısını etkilemez (INV-03).
 - **Gerekçe:** emilim, ilerlemeden hemen sonra yapılır; böylece c_d'yi bu tick geçen dalga yakalanır. Yeni

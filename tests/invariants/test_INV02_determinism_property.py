@@ -1,10 +1,11 @@
 """INV-02 as a property (hypothesis): for any seed and any action sequence, a game is reproducible bit for bit.
 
-ROADMAP Phase 0 acceptance: >= 200 seeds x 300 ticks with random actions. Each example plays one full default
-game twice, and once more from a random saved tick (ADR-011 branching).
+ROADMAP Phase 0 acceptance: >= 200 seeds x 300 ticks with random actions, met by the `full` hypothesis profile
+(tests/conftest.py). Each example plays one full default game twice, and once more from a random saved tick
+(ADR-011 branching).
 """
 
-from hypothesis import HealthCheck, given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from engine.actions import Ability, Actions, Aim, DonkeyAction, ShrekAction, ShrekMove
@@ -14,7 +15,6 @@ from tests.support import run
 
 CFG = load_config()
 TICKS = CFG.time.game_length_ticks
-EXAMPLES = 200
 
 seeds = st.integers(min_value=0, max_value=2**64 - 1)
 actions = st.builds(
@@ -27,7 +27,6 @@ actions = st.builds(
 games = st.lists(actions, min_size=TICKS, max_size=TICKS)
 
 
-@settings(max_examples=EXAMPLES, deadline=None, suppress_health_check=[HealthCheck.too_slow, HealthCheck.data_too_large])
 @given(seed=seeds, game=games, k=st.integers(min_value=1, max_value=TICKS - 1))
 def test_any_game_replays_bit_for_bit(seed, game, k):
     a = run(CFG, seed, game)
@@ -40,7 +39,6 @@ def test_any_game_replays_bit_for_bit(seed, game, k):
     assert rest.events == tuple(e for e in a.events if e.t >= k)
 
 
-@settings(max_examples=EXAMPLES, deadline=None)
 @given(seed=seeds)
 def test_any_seed_plays_a_full_game(seed):
     # Every game runs to its length and ends by time exactly once (no rule can end it by lives yet).

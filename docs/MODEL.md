@@ -74,17 +74,19 @@ config: `map.max_regen_attempts`
 ## 3. Su (W)
 
 **W-01 Taban seviyesi (Ornstein–Uhlenbeck, AR(1)).**
-`B(t+1) = B(t) + θ(μ − B(t)) + σ·ε_t`, ε_t ~ N(0,1). `B(0) = μ`.
+`B(t+1) = B(t) + θ(μ − B(t)) + σ·ε_t`, ε_t ~ N(0,1). `B(0) = μ`. ε_t, σ = 0 olsa da her tick çekilir (R-02, INV-03).
 Durağan dağılım: N(μ, σ²/(1 − (1 − θ)²)). Varsayılanla std ≈ 6,4 cm, ilişki süresi 1/θ ≈ 12,5 tick.
 config: `water.ou_theta_per_tick`, `water.ou_mu_cm`, `water.ou_sigma_cm`
 
 **W-02 Dalga varışı (Poisson).** Her tick `N_t ~ Poisson(λ)` dalga doğar; genlik `A ~ Üstel(ortalama ā)`.
-Doğuş konumu `x = −k_spawn · s` (profil haritaya yumuşakça girer).
+Doğuş konumu `x = −k_spawn · s` (profil haritaya yumuşakça girer). N_t, λ = 0 olsa da her tick çekilir; genlikler
+N_t adet üstel çekilişle aynı çağrıda alınır. Dalga kimlikleri doğuş sırasıyla artar (`Water.next_wave_id`),
+baraj dalgaları (W-05) da aynı sayacı kullanır.
 config: `water.wave_rate_per_tick`, `water.wave_amp_mean_cm`, `water.wave_spawn_offset_widths`
 
 **W-03 Yürüyen dalga profili.** `x_k(t+1) = x_k(t) + v`.
 `W(c,t) = Σ_k A_k · exp(−(c − x_k(t))² / 2s²)`. Profil sütuna bağlıdır, satırdan bağımsızdır (bütün sütun
-birlikte yükselir). `x_k > (C − 1) + k_cull·s` olan dalga silinir.
+birlikte yükselir). `x_k > (C − 1) + k_cull·s` olan dalga silinir ve `WaveExited` yayılır.
 Dalga hacmi: `V_k = A_k · s · √(2π)` [cm·sütun].
 config: `water.wave_speed_cols_per_tick`, `water.wave_width_cols`, `water.wave_cull_offset_widths`
 
@@ -95,7 +97,10 @@ Fiziksel yorum: baraj, akış hızıyla gelen `drop` yüksekliğindeki su şerid
 config: `dam.downstream_drop_cm`, `water.wave_speed_cols_per_tick`
 
 **W-05 Baraj salınımı ve patlama.** Baraj bırakıldığında ya da `Q ≥ Q_max` olduğunda (patlama, `burst`)
-`c_d` konumunda yeni bir dalga doğar: `A = Q / (s·√(2π))`, `origin = DAM`. Ardından Q = 0. Patlama, birikim
+`x = c_d` konumunda yeni bir dalga doğar: `A = Q / (s·√(2π))`, `origin = DAM`. Ardından Q = 0 ve bölüm
+sayaçları (`accumulated_volume`, `absorbed_volume`, `held_ticks`) sıfırlanır. Elle bırakma TICK adım 2(a)'da
+(dalga aynı tick adım 5'te ilerler), patlama adım 5(e)'de olur (dalga bu tick ilerlemez). İkisinde de
+`DamReleased` ve ardından `WaveSpawned(origin=DAM)` yayılır. `held_ticks` = bölümde birikim (W-04) yapılan tick sayısı. Patlama, birikim
 ya da emilim Q'yu Q_max'a ulaştırdığı tick'te olur ve Q kırpılmadan olduğu gibi salınır. Q_max bir sınır değil,
 tetikleyicidir; hacim kaybolmaz. Patlamadan sonra Shrek'in yeniden baraj kurması için DAM'i bir tick bırakması gerekir.
 Korunum: bir baraj bölümünde `salınan hacim = Σ q_in + Σ emilen V_k` (α = 1 sabit; ayarlanabilir değildir).
@@ -103,8 +108,9 @@ Varsayılanla 10 tick tutmak A ≈ 13 cm (≈ ortalama dalga), patlama (30 tick)
 config: `dam.q_max_cm_cols`
 
 **W-06 Dalga emilimi.** Baraj aktifken merkezi `c_d`'yi geçen (`x_k(t) < c_d ≤ x_k(t+1)`) her dalga silinir,
-hacmi Q'ya eklenir (`WaveAbsorbed`). Baraj aktifken `c > c_d` sütunlarına yalnızca merkezi zaten `c_d`'nin
-doğusunda olan dalgalar katkı verir; batıdaki dalgaların doğu kuyrukları kesilir.
+hacmi Q'ya eklenir (`WaveAbsorbed`). Baraj aktifken `c > c_d` sütunlarına yalnızca merkezi `x_k ≥ c_d` olan (emilmemiş)
+dalgalar katkı verir; batıdaki dalgaların doğu kuyrukları kesilir. Sınır: tam `c_d` üzerindeki merkez doğuya
+sayılır (emilim koşulu `c_d ≤ x_k(t+1)` ile aynı taraf).
 config: —
 
 **W-07 Sütun seviyesi.**

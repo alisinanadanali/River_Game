@@ -9,7 +9,7 @@ from collections import deque
 
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 from engine.world import meets_guarantee, rocks_to_solve
@@ -120,13 +120,11 @@ small_grids = st.integers(min_value=1, max_value=4).flatmap(
 )
 
 
-@settings(max_examples=300, deadline=None)
 @given(stones=small_grids)
 def test_matches_brute_force(stones):
     assert rocks_to_solve(stones) == brute_force_rocks(stones)
 
 
-@settings(max_examples=200, deadline=None)
 @given(stones=small_grids)
 def test_bounds(stones):
     # 0 ≤ n_rock ≤ R: one rock per row in a straight line always crosses.

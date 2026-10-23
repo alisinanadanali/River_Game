@@ -51,7 +51,8 @@ dizilerin içeriğiyle tanımlıdır (`NaN` = `NaN`), böylece `GameState` karş
 |---|---|---|---|
 | `base_level` | float | cm | B(t) (W-01) |
 | `waves` | tuple[Wave] | — | Aktif dalgalar |
-| `level` | float[C] | cm | L(c,t), adım 5 sonunda hesaplanır (W-07) |
+| `level` | float[C] | cm | L(c,t), adım 5 sonunda hesaplanır (W-07); salt okunur |
+| `next_wave_id` | int | — | Sıradaki dalga kimliği (W-02, W-05) |
 
 ## Wave
 
@@ -69,10 +70,11 @@ dizilerin içeriğiyle tanımlıdır (`NaN` = `NaN`), böylece `GameState` karş
 |---|---|---|---|
 | `active` | bool | — | Bu tick baraj tutuluyor mu |
 | `col` | int \| None | sütun | c_d; tutulmaya başlandığı andaki Shrek sütunu |
-| `volume` | float | cm·sütun | Q, 0 ≤ Q ≤ `q_max_cm_cols` |
+| `volume` | float | cm·sütun | Q; tick sonunda 0 ≤ Q < `q_max_cm_cols` (INV-08, W-05 patlaması) |
 | `started_at` | int \| None | tick | — |
 | `absorbed_volume` | float | cm·sütun | Bu bölümde emilen dalga hacmi (ölçüm için) |
 | `accumulated_volume` | float | cm·sütun | Bu bölümde Σ q_in (INV-04 için) |
+| `held_ticks` | int | tick | Bu bölümde birikim yapılan tick sayısı (`DamReleased.held_ticks`) |
 | `burst_lock` | bool | — | Patlamadan sonra DAM bırakılana kadar true (S-08) |
 
 ## Donkey
@@ -154,7 +156,7 @@ Kodda `engine/state.py`. Alanlar, onları kullanan kurallarla birlikte eklenir (
 | `bank` | Bank | — |
 | `score` | int | Teslim puanı |
 | `game_over` | enum \| None | `TIME` / `LIVES` |
-| `next_ids` | dict | Yük, dalga, geçici taş kimlik sayaçları |
+| `next_ids` | dict | Yük ve geçici taş kimlik sayaçları (dalga sayacı `Water.next_wave_id`) |
 
 RNG akışları durumun parçası değildir: `step` onları ayrı alır ve yeni değerlerini ayrı döndürür (ADR-011,
 `engine/rng.py` `Rngs`).
