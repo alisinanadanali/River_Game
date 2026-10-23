@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from engine.actions import Ability, Actions, DonkeyAction, ShrekAction
+from engine.actions import Actions
 from engine.config import load_config
 from engine.events import GameOver, GameOverReason
 from engine.rng import make_rngs
@@ -113,15 +113,6 @@ def test_full_default_game_ends_at_its_length():
     assert trace.states[-1].t == CFG.time.game_length_ticks
     assert [e.type for e in trace.events if e.type == "GameOver"] == ["GameOver"]
     assert trace.events[-1].type == "GameOver"
-
-
-# --- skeleton: no rule reads the actions yet ---------------------------------------------------
-
-def test_actions_do_not_matter_yet():
-    # Becomes false as soon as a rule uses an action (step 7); then this test is deleted, not "fixed".
-    busy = Actions(donkey=DonkeyAction.MOVE_N, shrek=ShrekAction(ability=Ability.THROW))
-    state, rngs = new_game(CFG, 42)
-    assert step(state, busy, rngs) == step(state, Actions(), rngs)
 
 
 def test_streams_differ_between_seeds():

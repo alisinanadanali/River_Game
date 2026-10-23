@@ -55,6 +55,8 @@ def shrek_stage(tick: Tick) -> Tick:
     cfg, shrek, action = tick.state.config, tick.state.shrek, tick.actions.shrek
     col = walk(shrek.col, action.move, cfg.map.cols)
     row = aim(shrek.aim_row, action.aim, cfg.map.rows)
+    if (col, row) == (shrek.col, shrek.aim_row):
+        return tick  # most ticks: nothing to copy
     tick = _set_shrek(tick, dataclasses.replace(shrek, col=col, aim_row=row))
     if col != shrek.col:
         tick = tick.emit(ShrekMoved, from_col=shrek.col, to_col=col)

@@ -8,11 +8,13 @@ in place. A stage whose rules are not implemented yet returns its Tick unchanged
 import dataclasses
 
 from engine.actions import Actions
+from engine.donkey import depth_stage, donkey_stage, expire_stance
 from engine.events import Event, GameOver, GameOverReason
 from engine.rng import Rngs, draw_blocks
 from engine.shrek import shrek_stage
 from engine.state import GameState
 from engine.tick import Tick
+from engine.validation import validate_stage
 from engine.water import water_stage
 
 
@@ -44,9 +46,9 @@ def _rng_blocks(tick: Tick) -> Tick:
 def _validate_actions(tick: Tick) -> Tick:
     """TICK.md step 1: action validation. Rules: S-03, D-05, S-08.
 
-    Nothing can be rejected yet: cooldowns, the dam and slow moves arrive with their rules (Phase 0 step 7).
+    engine/validation.py: rejected components become no-ops, each reported with ActionRejected.
     """
-    return tick
+    return validate_stage(tick)
 
 
 def _shrek_actions(tick: Tick) -> Tick:
@@ -60,9 +62,9 @@ def _shrek_actions(tick: Tick) -> Tick:
 def _donkey_action(tick: Tick) -> Tick:
     """TICK.md step 3: the donkey's action. Rules: D-02, D-03, D-05, D-08.
 
-    Not implemented yet (Phase 0 step 7).
+    engine/donkey.py: moves (D-05) and stances (D-08).
     """
-    return tick
+    return donkey_stage(tick)
 
 
 def _projectiles(tick: Tick) -> Tick:
@@ -92,9 +94,9 @@ def _stones(tick: Tick) -> Tick:
 def _depth(tick: Tick) -> Tick:
     """TICK.md step 7: depth. Rules: D-01, D-04, D-06, D-07.
 
-    Not implemented yet (Phase 0 step 7); it will also end the game when the last life is lost.
+    engine/donkey.py: effective height, depth state, and the sweep that may end the game by lives.
     """
-    return tick
+    return depth_stage(tick)
 
 
 def _floating_items(tick: Tick) -> Tick:
@@ -124,9 +126,10 @@ def _delivery(tick: Tick) -> Tick:
 def _clock(tick: Tick) -> Tick:
     """TICK.md step 11: clock. Rules: S-03, D-08.
 
-    t += 1, and the game ends by time when t reaches game_length_ticks (unless step 7 already ended it).
-    Cooldowns (S-03) and stance expiry (D-08) arrive with their rules (Phase 0 step 7).
+    Stance expiry (D-08), then t += 1; the game ends by time when t reaches game_length_ticks (unless step 7
+    already ended it). Cooldowns (S-03) arrive with their rule.
     """
+    tick = expire_stance(tick)
     state = tick.state
     t = state.t + 1
     ends = state.game_over is None and t == state.config.time.game_length_ticks
