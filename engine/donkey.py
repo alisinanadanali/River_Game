@@ -13,9 +13,11 @@ from engine.actions import DonkeyAction
 from engine.config import Config, DonkeyConfig
 from engine.events import (
     ActionRejected, Component, DepthState, DonkeyDepthChanged, DonkeyMoved, DonkeyMoveStarted, DonkeyRespawned,
-    DonkeyStance, DonkeySwept, GameOver, GameOverReason, LifeLost, RejectReason, Role, Side, StanceReason, SweptCause,
+    DonkeyStance, DonkeySwept, DropCause, GameOver, GameOverReason, ItemDropped, LifeLost, RejectReason, Role, Side,
+    StanceReason, SweptCause,
 )
 from engine.evolve import evolve
+from engine.items import drop_into_water, item_type
 from engine.stones import temp_at
 from engine.world import walkable
 
@@ -112,6 +114,31 @@ def classify_depth(d: float, donkey_cfg: DonkeyConfig) -> DepthState:
     return DepthState.DRY
 
 
+def fits(bag: Bag, mass: float, volume: int, donkey_cfg: DonkeyConfig) -> bool:
+    """D-09: room for an item of this mass and volume on this side."""
+    return bag.mass + mass <= donkey_cfg.bag_max_kg_per_side and bag.volume + volume <= donkey_cfg.bag_max_volume_per_side
+
+
+def push(bag: Bag, item_id: int, mass: float, volume: int) -> Bag:
+    """D-09: the item goes on top. The caller has checked fits()."""
+    return Bag(items=bag.items + (item_id,), mass=bag.mass + mass, volume=bag.volume + volume)
+
+
+def pop(bag: Bag, mass: float, volume: int) -> tuple[int, Bag]:
+    """D-09: (top item, bag without it); mass and volume are the top item's."""
+    if not bag.items:
+        raise ValueError("pop from an empty bag")
+    return bag.items[-1], Bag(items=bag.items[:-1], mass=bag.mass - mass, volume=bag.volume - volume)
+
+
+def bag_of(donkey: Donkey, side: Side) -> Bag:
+    return donkey.bag_left if side is Side.LEFT else donkey.bag_right
+
+
+def with_bag(donkey: Donkey, side: Side, bag: Bag) -> Donkey:
+    return evolve(donkey, bag_left=bag) if side is Side.LEFT else evolve(donkey, bag_right=bag)
+
+
 def stance_ready(donkey: Donkey, t: int) -> bool:
     """D-08: a stance catches only in ticks after the one it was taken in."""
     return donkey.stance is not Side.NONE and t > donkey.stance_since
@@ -200,10 +227,13 @@ def sweep(tick: Tick, cause: SweptCause, depth: float | None) -> Tick:
     cancelled). With no life left the game ends; the donkey is still put on the bank but not 'respawned'."""
     state = tick.state
     donkey = state.donkey
-    dropped = donkey.bag_left.items + donkey.bag_right.items
+    sides = {i: Side.LEFT for i in donkey.bag_left.items} | {i: Side.RIGHT for i in donkey.bag_right.items}
     tick = tick.emit(
-        DonkeySwept, row=donkey.row, col=donkey.col, depth_cm=depth, cause=cause, items_dropped=len(dropped)
+        DonkeySwept, row=donkey.row, col=donkey.col, depth_cm=depth, cause=cause, items_dropped=len(sides)
     )
+    for item_id in sorted(sides):  # MODEL D-07: in id order, each into the water of the donkey's cell (I-04)
+        tick = tick.emit(ItemDropped, item_id=item_id, side=sides[item_id], cause=DropCause.SWEPT)
+        tick = drop_into_water(tick, item_id, donkey.row, float(donkey.col))
     lives = donkey.lives - 1
     tick = tick.emit(LifeLost, lives_left=lives)
     tick = _set_donkey(tick, Donkey(row=-1, col=donkey.col, lives=lives))

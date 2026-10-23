@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from engine.config import Config
 from engine.donkey import Donkey, initial_donkey
 from engine.events import GameOverReason
-from engine.items import Bank, Item
+from engine.items import Bank, Item, Projectile
 from engine.rng import Rngs, make_rngs
 from engine.shrek import Shrek, initial_shrek
 from engine.stones import Stones, initial_stones
@@ -28,6 +28,7 @@ class GameState:
     shrek: Shrek                        # S-01 … S-08
     items: tuple[Item, ...]             # every item born, items[i].id == i (I-01 … I-05)
     bank: Bank                          # I-02
+    projectiles: tuple[Projectile, ...]  # S-04 … S-06, in throw order
     t: int                              # tick counter; the next step processes tick t
     score: int                          # Σ delivered points (D-10)
     game_over: GameOverReason | None    # set once, by TICK.md step 7 (lives) or step 11 (time)
@@ -49,6 +50,7 @@ def new_game(config: Config, seed: int) -> tuple[GameState, Rngs]:
         shrek=initial_shrek(config),
         items=(),
         bank=Bank(),
+        projectiles=(),
         t=0,
         score=0,
         game_over=None,

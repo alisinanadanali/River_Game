@@ -108,6 +108,35 @@ class LostReason(StrEnum):
     OFF_MAP = "off_map"              # S-05
 
 
+class ProjectileKind(StrEnum):
+    THROW = "THROW"      # S-04
+    HANDOFF = "HANDOFF"  # S-06
+
+
+class CatchSource(StrEnum):
+    FLIGHT = "flight"      # S-05
+    HANDOFF = "handoff"    # S-06
+    FLOATING = "floating"  # I-05
+
+
+class MissReason(StrEnum):
+    NO_STANCE = "no_stance"
+    STANCE_TOO_LATE = "stance_too_late"
+    OUT_OF_RADIUS = "out_of_radius"
+    DONKEY_ON_BANK = "donkey_on_bank"
+
+
+class ReturnCause(StrEnum):
+    HANDOFF_CANCELLED = "handoff_cancelled"  # S-06
+    LANDED_ON_BANK = "landed_on_bank"        # S-05
+
+
+class DropCause(StrEnum):
+    KNEE = "knee"    # D-06
+    SLIP = "slip"    # D-03
+    SWEPT = "swept"  # D-07
+
+
 class RaiseTarget(StrEnum):
     STONE = "stone"            # a permanent stone: r_i += rock_raise_cm
     TEMP_STONE = "temp_stone"  # a temporary stone: h += rock_raise_cm
@@ -313,3 +342,78 @@ class ItemLost(Event):
     item_id: int
     reason: LostReason
     origin: ItemStatus | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemThrown(Event):
+    """TICK.md step 2(d): the head of the queue left Shrek's hands (S-04 THROW, S-06 HANDOFF)."""
+
+    item_id: int
+    kind: ProjectileKind
+    from_col: int
+    target: tuple[int, int]
+    sigma: float        # cells; 0 for a handoff
+    flight_ticks: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemCaught(Event):
+    """TICK.md steps 4 (flight, handoff) and 8 (floating): the item went into the `side` bag."""
+
+    item_id: int
+    side: Side
+    source: CatchSource
+    miss_distance: float  # cells from the donkey's cell
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemMissed(Event):
+    """TICK.md step 4: a thrown item was not caught (S-05); reason is the first condition that failed."""
+
+    item_id: int
+    landing: tuple[float, float]
+    miss_distance: float
+    reason: MissReason
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemBounced(Event):
+    """TICK.md step 4: the catch was good but the `side` bag had no room; the item falls into the water (S-05)."""
+
+    item_id: int
+    side: Side
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemReturnedToBank(Event):
+    """TICK.md step 4: back at the end of the queue (S-05 landed on the bank, S-06 handoff cancelled)."""
+
+    item_id: int
+    cause: ReturnCause
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemDropped(Event):
+    """TICK.md steps 3 (slip) and 7 (knee, swept): an item fell from the `side` bag (D-03, D-06, D-07)."""
+
+    item_id: int
+    side: Side
+    cause: DropCause
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemFloated(Event):
+    """TICK.md steps 3, 4, 7: an item in the water that floats, at (row, x) (I-04)."""
+
+    item_id: int
+    row: int
+    x: float
+
+
+@dataclass(frozen=True, kw_only=True)
+class ItemSank(Event):
+    """TICK.md steps 3, 4, 7: an item in the water that does not float; ItemLost(sank) follows (I-04)."""
+
+    item_id: int
+    row: int
+    col: int

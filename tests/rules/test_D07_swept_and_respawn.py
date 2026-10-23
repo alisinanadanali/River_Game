@@ -6,11 +6,12 @@ emitted; the remaining stages of that tick still run, and the next step is an er
 import pytest
 
 from engine.actions import Actions, DonkeyAction
-from engine.donkey import DepthState, Side
+from engine.donkey import Bag, DepthState, Side
 from engine.events import (
-    DonkeyDepthChanged, DonkeyRespawned, DonkeyStance, DonkeySwept, GameOver, GameOverReason, LifeLost, StanceReason,
-    SweptCause,
+    DonkeyDepthChanged, DonkeyRespawned, DonkeyStance, DonkeySwept, DropCause, GameOver, GameOverReason, ItemDropped,
+    LifeLost, StanceReason, SweptCause,
 )
+from engine.items import Item, ItemStatus
 from engine.step import GameFinishedError, step
 
 from tests.support import run, set_up, still
@@ -59,6 +60,27 @@ def test_stance_is_cancelled():
     stance = next(e for e in trace.events if isinstance(e, DonkeyStance))
     assert (stance.side, stance.reason) == (Side.NONE, StanceReason.SWEPT)
     assert (trace.states[0].donkey.stance, trace.states[0].donkey.stance_since) == (Side.NONE, None)
+
+
+def test_bags_empty_into_the_water_in_id_order():
+    items = (
+        Item(id=0, kind="potato_sack", status=ItemStatus.IN_BAG),
+        Item(id=1, kind="apple_crate", status=ItemStatus.IN_BAG),
+        Item(id=2, kind="watermelon", status=ItemStatus.IN_BAG),
+    )
+    bags = {"bag_left": Bag(items=(2, 0), mass=80.0, volume=5), "bag_right": Bag(items=(1,), mass=10.0, volume=1)}
+    start = set_up(CFG, LINE, DEEP, items=items, donkey={"row": 0, "col": 2, **bags})
+    trace = run(CFG, 1, [Actions()], start=start)
+    assert next(e for e in trace.events if isinstance(e, DonkeySwept)).items_dropped == 3
+    assert [(e.item_id, e.side, e.cause) for e in trace.events if isinstance(e, ItemDropped)] == [
+        (0, Side.LEFT, DropCause.SWEPT), (1, Side.RIGHT, DropCause.SWEPT), (2, Side.LEFT, DropCause.SWEPT),
+    ]
+    after = trace.states[0]
+    assert [i.status for i in after.items] == [ItemStatus.LOST, ItemStatus.FLOATING, ItemStatus.FLOATING]
+    assert after.items[1].pos == (0, 2.0) and after.donkey.bag_left == Bag() == after.donkey.bag_right
+    names = [type(e).__name__ for e in trace.events]
+    assert names == ["DonkeySwept", "ItemDropped", "ItemSank", "ItemLost", "ItemDropped", "ItemFloated",
+                     "ItemDropped", "ItemFloated", "LifeLost", "DonkeyRespawned"]
 
 
 def test_slow_move_is_cancelled():

@@ -134,6 +134,9 @@ Kodda `engine/items.py`; `GameState.items[i].id == i`, yükler silinmez (I-01, I
 
 ## Projectile
 
+Kodda `engine/items.py`; inişleri `engine/catching.py` çözer (S-05, S-06; I-05 de orada). `catching`, `items`'a ve
+`donkey`'ye bağlıdır; böylece import'lar tek yönlüdür: items ← donkey ← catching.
+
 | Alan | Tip | Birim | Açıklama |
 |---|---|---|---|
 | `item_id` | int | — | — |

@@ -3,7 +3,8 @@ each item is where its status says: ON_BANK items are exactly the bank queue (in
 
 Counting statuses alone would be trivially true (each item has one status), so the invariant is checked
 against the places that hold items and against the event log: ItemArrived count = items born, ItemLost count =
-LOST items. (IN_FLIGHT, IN_BAG and FLOATING get their places with S-04 … I-05.)
+LOST items; IN_FLIGHT items are exactly the projectiles, IN_BAG items exactly the bag contents, FLOATING items
+have a position.
 """
 
 from hypothesis import given
@@ -15,7 +16,8 @@ from engine.items import ItemStatus
 
 from tests.support import config_with, run
 
-CFG = config_with({"items": {"arrival_rate_per_tick": 0.5}})
+# Many items, and catches are easy, so every status is visited (see the guard below).
+CFG = config_with({"items": {"arrival_rate_per_tick": 0.5}, "shrek": {"catch_radius_cells": 3.0}})
 TICKS = CFG.time.game_length_ticks
 
 actions = st.builds(
@@ -34,6 +36,10 @@ def check(state, arrived: int, lost_events: int) -> None:
     # Same items; the order may differ, as returned items go to the back of the queue (S-05, S-06).
     assert sorted(state.bank.queue) == by_status[ItemStatus.ON_BANK]
     assert len(set(state.bank.queue)) == len(state.bank.queue) <= CFG.items.bank_capacity
+    assert sorted(p.item_id for p in state.projectiles) == by_status[ItemStatus.IN_FLIGHT]
+    bags = state.donkey.bag_left.items + state.donkey.bag_right.items
+    assert sorted(bags) == by_status[ItemStatus.IN_BAG] and len(set(bags)) == len(bags)
+    assert all((i.pos is not None) == (i.status in (ItemStatus.FLOATING, ItemStatus.IN_FLIGHT)) for i in items)
     assert len(by_status[ItemStatus.LOST]) == lost_events
     assert all((i.lost_reason is not None) == (i.status is ItemStatus.LOST) for i in items)
 
@@ -53,3 +59,14 @@ def test_games_really_bring_and_lose_items():
     trace = run(CFG, 1, [Actions()] * TICKS)
     assert len(trace.states[-1].items) > 100
     assert any(i.status is ItemStatus.LOST for i in trace.states[-1].items)
+
+
+def test_random_games_visit_every_status():
+    # Guards the property: random play with this config throws, catches, drops and loses items.
+    seen = set()
+    for seed in range(3):
+        game = [Actions(donkey=d, shrek=ShrekAction(aim=a, ability=b))
+                for d, a, b in zip(list(DonkeyAction) * 50, list(Aim) * 117, [Ability.THROW, Ability.NONE] * 175)][:TICKS]
+        for state in run(CFG, seed, game).states:
+            seen |= {i.status for i in state.items}
+    assert seen >= {ItemStatus.ON_BANK, ItemStatus.IN_FLIGHT, ItemStatus.FLOATING, ItemStatus.LOST}

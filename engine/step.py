@@ -7,6 +7,7 @@ in place. A stage whose rules are not implemented yet returns its Tick unchanged
 
 
 from engine.actions import Actions
+from engine.catching import projectiles_stage
 from engine.donkey import depth_stage, donkey_stage, expire_stance
 from engine.events import Event, GameOver, GameOverReason
 from engine.evolve import evolve
@@ -72,9 +73,9 @@ def _donkey_action(tick: Tick) -> Tick:
 def _projectiles(tick: Tick) -> Tick:
     """TICK.md step 4: projectiles. Rules: S-04, S-05, S-06, D-08, D-09, I-04.
 
-    Not implemented yet (Phase 0 step 7).
+    engine/catching.py: count down, then catch, bounce, miss, return to the bank or fall into the water.
     """
-    return tick
+    return projectiles_stage(tick)
 
 
 def _water(tick: Tick) -> Tick:

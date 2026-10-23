@@ -50,6 +50,9 @@ def _validate_shrek(tick: Tick) -> Tick:
     if cooldown.get(valid.ability, 0) > 0:
         tick = _reject(tick, Component.ABILITY, RejectReason.COOLDOWN)
         valid = evolve(valid, ability=Ability.NONE)
+    if valid.ability is Ability.THROW and not state.bank.queue:
+        tick = _reject(tick, Component.ABILITY, RejectReason.QUEUE_EMPTY)
+        valid = evolve(valid, ability=Ability.NONE)
     if valid.ability is Ability.ROCK and _rock_would_exceed_limit(tick, valid):
         tick = _reject(tick, Component.ABILITY, RejectReason.ROCK_LIMIT)
         valid = evolve(valid, ability=Ability.NONE)
