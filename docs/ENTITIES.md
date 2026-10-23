@@ -4,7 +4,8 @@ Bu belge oyun durumunu oluşturan varlıkları, alanlarını, birimlerini ve ge�
 Formüller MODEL.md'de kural kimlikleriyle, sıralama TICK.md'de yer alır. Terimler GLOSSARY.md'dedir.
 
 Tüm durum nesneleri **değişmez** (frozen dataclass); `step` yeni bir `GameState` döndürür (bkz. ADR-005).
-Sayısal ızgara alanları `numpy` dizileridir ve kopyalanarak güncellenir.
+Sayısal ızgara alanları `numpy` dizileridir ve kopyalanarak güncellenir. Motor kopyaları `dataclasses.replace` yerine
+`engine/evolve.py` `evolve` ile yapar (aynı sonuç, alan adı denetimi var, ≈ 3 kat hızlı; tick başına ≈ 30 kopya).
 
 ## Koordinat sistemi
 

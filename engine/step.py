@@ -5,11 +5,11 @@ PIPELINE, TICK.md steps 0 … 12 in that order. Each stage takes a Tick and retu
 in place. A stage whose rules are not implemented yet returns its Tick unchanged and says so in its docstring.
 """
 
-import dataclasses
 
 from engine.actions import Actions
 from engine.donkey import depth_stage, donkey_stage, expire_stance
 from engine.events import Event, GameOver, GameOverReason
+from engine.evolve import evolve
 from engine.rng import Rngs, draw_blocks
 from engine.shrek import cool_down, shrek_stage
 from engine.state import GameState
@@ -40,7 +40,7 @@ def _rng_blocks(tick: Tick) -> Tick:
     The throw and slip blocks are drawn every tick, used or not, so the streams never depend on the actions.
     """
     u_throw, u_slip, rngs = draw_blocks(tick.rngs)
-    return dataclasses.replace(tick, rngs=rngs, u_throw=u_throw, u_slip=u_slip)
+    return evolve(tick, rngs=rngs, u_throw=u_throw, u_slip=u_slip)
 
 
 def _validate_actions(tick: Tick) -> Tick:
@@ -133,9 +133,9 @@ def _clock(tick: Tick) -> Tick:
     state = tick.state
     t = state.t + 1
     ends = state.game_over is None and t == state.config.time.game_length_ticks
-    tick = dataclasses.replace(
+    tick = evolve(
         tick,
-        state=dataclasses.replace(
+        state=evolve(
             state, shrek=cool_down(state.shrek), t=t, game_over=GameOverReason.TIME if ends else state.game_over
         ),
     )

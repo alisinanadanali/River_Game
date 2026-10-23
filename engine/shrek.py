@@ -6,13 +6,13 @@ small pure function; shrek_stage chains them in the TICK.md step 2 sub-order and
 
 from __future__ import annotations
 
-import dataclasses
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from engine.actions import Ability, Aim, ShrekMove
 from engine.config import Config
 from engine.events import DamStarted, ReleaseReason, ShrekAimed, ShrekMoved
+from engine.evolve import evolve
 from engine.water import release_dam, start_dam
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports this module
@@ -50,7 +50,7 @@ def cool_down(shrek: Shrek) -> Shrek:
     """S-03 (TICK.md step 11): each cooldown drops by one tick, not below 0."""
     if shrek.throw_cooldown == 0 and shrek.rock_cooldown == 0:
         return shrek
-    return dataclasses.replace(
+    return evolve(
         shrek, throw_cooldown=max(shrek.throw_cooldown - 1, 0), rock_cooldown=max(shrek.rock_cooldown - 1, 0)
     )
 
@@ -68,7 +68,7 @@ def shrek_stage(tick: Tick) -> Tick:
     row = aim(shrek.aim_row, action.aim, cfg.map.rows)
     if (col, row) == (shrek.col, shrek.aim_row):
         return tick  # most ticks: nothing to copy
-    tick = _set_shrek(tick, dataclasses.replace(shrek, col=col, aim_row=row))
+    tick = _set_shrek(tick, evolve(shrek, col=col, aim_row=row))
     if col != shrek.col:
         tick = tick.emit(ShrekMoved, from_col=shrek.col, to_col=col)
     if row != shrek.aim_row:
@@ -83,10 +83,10 @@ def dam_stage(tick: Tick) -> Tick:
         return release_dam(tick, ReleaseReason.MANUAL)
     if not state.dam.active and ability is Ability.DAM:
         dam = start_dam(state.dam, state.shrek.col, tick.t)
-        tick = dataclasses.replace(tick, state=dataclasses.replace(state, dam=dam))
+        tick = evolve(tick, state=evolve(state, dam=dam))
         return tick.emit(DamStarted, col=dam.col)
     return tick
 
 
 def _set_shrek(tick: Tick, shrek: Shrek) -> Tick:
-    return dataclasses.replace(tick, state=dataclasses.replace(tick.state, shrek=shrek))
+    return evolve(tick, state=evolve(tick.state, shrek=shrek))

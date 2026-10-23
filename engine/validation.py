@@ -6,11 +6,11 @@ stages only ever see valid actions and need no defensive checks.
 
 from __future__ import annotations
 
-import dataclasses
 from typing import TYPE_CHECKING
 
 from engine.actions import Ability, DonkeyAction, ShrekMove
 from engine.events import ActionRejected, Component, RejectReason, Role
+from engine.evolve import evolve
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports engine/donkey.py
     from engine.tick import Tick
@@ -26,7 +26,7 @@ def _validate_donkey(tick: Tick) -> Tick:
     actions = tick.actions
     if tick.state.donkey.move_remaining > 0 and actions.donkey is not DonkeyAction.NOOP:
         tick = tick.emit(ActionRejected, role=Role.DONKEY, component=Component.ACTION, reason=RejectReason.BUSY_MOVING)
-        tick = dataclasses.replace(tick, actions=dataclasses.replace(actions, donkey=DonkeyAction.NOOP))
+        tick = evolve(tick, actions=evolve(actions, donkey=DonkeyAction.NOOP))
     return tick
 
 
@@ -37,20 +37,20 @@ def _validate_shrek(tick: Tick) -> Tick:
     if state.dam.burst_lock:
         if action.ability is Ability.DAM:
             tick = _reject(tick, Component.ABILITY, RejectReason.BURST_LOCK)
-            valid = dataclasses.replace(valid, ability=Ability.NONE)
+            valid = evolve(valid, ability=Ability.NONE)
         else:  # S-08: DAM was let go, so the next DAM may start a dam again
-            dam = dataclasses.replace(state.dam, burst_lock=False)
-            tick = dataclasses.replace(tick, state=dataclasses.replace(state, dam=dam))
+            dam = evolve(state.dam, burst_lock=False)
+            tick = evolve(tick, state=evolve(state, dam=dam))
     if valid.ability is Ability.DAM and valid.move is not ShrekMove.NONE:
         tick = _reject(tick, Component.MOVE, RejectReason.DAM_ACTIVE)
-        valid = dataclasses.replace(valid, move=ShrekMove.NONE)
+        valid = evolve(valid, move=ShrekMove.NONE)
     cooldown = {Ability.THROW: state.shrek.throw_cooldown, Ability.ROCK: state.shrek.rock_cooldown}
     if cooldown.get(valid.ability, 0) > 0:
         tick = _reject(tick, Component.ABILITY, RejectReason.COOLDOWN)
-        valid = dataclasses.replace(valid, ability=Ability.NONE)
+        valid = evolve(valid, ability=Ability.NONE)
     if valid is action:
         return tick
-    return dataclasses.replace(tick, actions=dataclasses.replace(tick.actions, shrek=valid))
+    return evolve(tick, actions=evolve(tick.actions, shrek=valid))
 
 
 def _reject(tick: Tick, component: Component, reason: RejectReason) -> Tick:

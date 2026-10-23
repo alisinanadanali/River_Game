@@ -6,7 +6,6 @@ The donkey walks the stone graph (M-01) carrying two LIFO bags. Each rule is a s
 
 from __future__ import annotations
 
-import dataclasses
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -16,6 +15,7 @@ from engine.events import (
     ActionRejected, Component, DepthState, DonkeyDepthChanged, DonkeyMoved, DonkeyMoveStarted, DonkeyRespawned,
     DonkeyStance, DonkeySwept, GameOver, GameOverReason, LifeLost, RejectReason, Role, Side, StanceReason, SweptCause,
 )
+from engine.evolve import evolve
 from engine.world import walkable
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports this module
@@ -121,7 +121,7 @@ def donkey_stage(tick: Tick) -> Tick:
         return _start_move(tick, action)
     if action in STANCES:
         side = STANCES[action]
-        tick = _set_donkey(tick, dataclasses.replace(donkey, stance=side, stance_since=tick.t))
+        tick = _set_donkey(tick, evolve(donkey, stance=side, stance_since=tick.t))
         return tick.emit(DonkeyStance, side=side, reason=StanceReason.SET)
     return tick
 
@@ -134,12 +134,12 @@ def _start_move(tick: Tick, action: DonkeyAction) -> Tick:
     if not on_graph(tick.state, *target):
         return tick.emit(ActionRejected, role=Role.DONKEY, component=Component.ACTION, reason=RejectReason.NO_STONE)
     if donkey.stance is not Side.NONE:
-        donkey = dataclasses.replace(donkey, stance=Side.NONE, stance_since=None)
+        donkey = evolve(donkey, stance=Side.NONE, stance_since=None)
         tick = _set_donkey(tick, donkey).emit(DonkeyStance, side=Side.NONE, reason=StanceReason.MOVED)
     slow = cfg.donkey.slow_move_ticks
     if donkey.depth_state is DepthState.DRY or slow == 1:
         return _arrive(tick, donkey, target)
-    tick = _set_donkey(tick, dataclasses.replace(donkey, move_target=target, move_remaining=slow - 1))
+    tick = _set_donkey(tick, evolve(donkey, move_target=target, move_remaining=slow - 1))
     return tick.emit(DonkeyMoveStarted, from_cell=(donkey.row, donkey.col), to_cell=target, ticks=slow)
 
 
@@ -149,13 +149,13 @@ def _continue_move(tick: Tick) -> Tick:
     donkey = tick.state.donkey
     remaining = donkey.move_remaining - 1
     if remaining > 0:
-        return _set_donkey(tick, dataclasses.replace(donkey, move_remaining=remaining))
-    return _arrive(tick, dataclasses.replace(donkey, move_target=None, move_remaining=0), donkey.move_target)
+        return _set_donkey(tick, evolve(donkey, move_remaining=remaining))
+    return _arrive(tick, evolve(donkey, move_target=None, move_remaining=0), donkey.move_target)
 
 
 def _arrive(tick: Tick, donkey: Donkey, target: tuple[int, int]) -> Tick:
     origin = (donkey.row, donkey.col)
-    tick = _set_donkey(tick, dataclasses.replace(donkey, row=target[0], col=target[1]))
+    tick = _set_donkey(tick, evolve(donkey, row=target[0], col=target[1]))
     return tick.emit(DonkeyMoved, from_cell=origin, to_cell=target)
 
 
@@ -182,7 +182,7 @@ def _set_depth(tick: Tick, new: DepthState, d: float | None) -> Tick:
     donkey = tick.state.donkey
     if new is donkey.depth_state and d == donkey.depth:
         return tick  # e.g. every tick on a bank
-    tick = _set_donkey(tick, dataclasses.replace(donkey, depth_state=new, depth=d))
+    tick = _set_donkey(tick, evolve(donkey, depth_state=new, depth=d))
     if new is not donkey.depth_state:
         tick = tick.emit(DonkeyDepthChanged, old=donkey.depth_state, new=new, depth_cm=d, row=donkey.row, col=donkey.col)
     return tick
@@ -204,7 +204,7 @@ def sweep(tick: Tick, cause: SweptCause, depth: float | None) -> Tick:
         tick = tick.emit(DonkeyStance, side=Side.NONE, reason=StanceReason.SWEPT)
     if lives > 0:
         return tick.emit(DonkeyRespawned, col=donkey.col)
-    tick = dataclasses.replace(tick, state=dataclasses.replace(tick.state, game_over=GameOverReason.LIVES))
+    tick = evolve(tick, state=evolve(tick.state, game_over=GameOverReason.LIVES))
     return tick.emit(GameOver, reason=GameOverReason.LIVES, score=tick.state.score)
 
 
@@ -215,9 +215,9 @@ def expire_stance(tick: Tick) -> Tick:
     donkey = tick.state.donkey
     if donkey.stance is Side.NONE or tick.t - donkey.stance_since < tick.state.config.donkey.stance_max_ticks:
         return tick
-    tick = _set_donkey(tick, dataclasses.replace(donkey, stance=Side.NONE, stance_since=None))
+    tick = _set_donkey(tick, evolve(donkey, stance=Side.NONE, stance_since=None))
     return tick.emit(DonkeyStance, side=Side.NONE, reason=StanceReason.EXPIRED)
 
 
 def _set_donkey(tick: Tick, donkey: Donkey) -> Tick:
-    return dataclasses.replace(tick, state=dataclasses.replace(tick.state, donkey=donkey))
+    return evolve(tick, state=evolve(tick.state, donkey=donkey))

@@ -12,6 +12,8 @@ from typing import TypeVar
 
 import numpy as np
 
+from engine.evolve import evolve
+
 THROW_BLOCK = 2  # R-02: standard normals drawn from rng_throw every tick
 SLIP_BLOCK = 4   # R-02: uniforms drawn from rng_slip every tick (slip, slip side, knee drop, drop side)
 
@@ -59,7 +61,7 @@ def draw(rngs: Rngs, stream: str, f: Callable[[np.random.Generator], T]) -> tupl
         raise ValueError(f"unknown stream {stream!r}; expected one of {STREAMS}")
     bit_generator = _pcg64(getattr(rngs, stream))
     result = f(np.random.Generator(bit_generator))
-    return result, dataclasses.replace(rngs, **{stream: _state_of(bit_generator)})
+    return result, evolve(rngs, **{stream: _state_of(bit_generator)})
 
 
 def draw_blocks(rngs: Rngs) -> tuple[np.ndarray, np.ndarray, Rngs]:
