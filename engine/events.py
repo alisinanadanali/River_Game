@@ -33,6 +33,11 @@ class GameOverReason(StrEnum):
     LIVES = "lives"
 
 
+class WaveOrigin(StrEnum):
+    UPSTREAM = "UPSTREAM"  # W-02
+    DAM = "DAM"            # W-05
+
+
 @dataclass(frozen=True, kw_only=True)
 class GameOver(Event):
     """TICK.md steps 7 (lives) and 11 (time). The tick it ended in is the common field `t`."""

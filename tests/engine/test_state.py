@@ -54,7 +54,7 @@ def test_state_is_frozen():
 
 def test_fields_are_keyword_only():
     with pytest.raises(TypeError):
-        GameState(CFG, None, 0, 0, None)
+        GameState(CFG, None, None, None, 0, 0, None)
 
 
 def test_repr_leaves_out_the_config():
