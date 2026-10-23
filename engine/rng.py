@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 import numpy as np
+from numpy.random.bit_generator import ISeedSequence
 
 from engine.evolve import evolve
 
@@ -77,13 +78,26 @@ def draw_blocks(rngs: Rngs) -> tuple[np.ndarray, np.ndarray, Rngs]:
     return u_throw, u_slip, rngs
 
 
+class _BlankSeed(ISeedSequence):
+    """A stateless stand-in seed: _pcg64 overwrites the whole state at once, so seeding work is wasted.
+
+    PCG64(0) runs SeedSequence hashing (≈ 10 µs, two thirds of a draw); this takes ≈ 1.5 µs.
+    """
+
+    def generate_state(self, n_words, dtype=np.uint32):
+        return np.zeros(n_words, dtype=dtype)
+
+
+_BLANK_SEED = _BlankSeed()  # immutable and stateless: a constant, not shared mutable state
+
+
 def _state_of(bit_generator: np.random.PCG64) -> StreamState:
     s = bit_generator.state
     return StreamState(s["state"]["state"], s["state"]["inc"], s["has_uint32"], s["uinteger"])
 
 
 def _pcg64(stream: StreamState) -> np.random.PCG64:
-    bit_generator = np.random.PCG64(0)  # placeholder seed, overwritten at once by the stored state
+    bit_generator = np.random.PCG64(_BLANK_SEED)  # placeholder seed, overwritten at once by the stored state
     bit_generator.state = {
         "bit_generator": "PCG64",
         "state": {"state": stream.state, "inc": stream.inc},
