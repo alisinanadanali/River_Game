@@ -126,7 +126,10 @@ config: —
 ## 4. Eşek (D)
 
 **D-01 Etkin taş yüksekliği.** Eşek i taşının üzerindeyken
-`e_i = h_i + r_i(t) − (m_D + M_bag) / k_i`. Geçici taşta `h_i + r_i` yerine taşın anlık yüksekliği kullanılır.
+`e_i = h_i + r_i(t) − (m_D + M_bag) / k_i`. Geçici taşta `h_i + r_i` yerine taşın anlık yüksekliği `h(t)`,
+`k_i` yerine `rock_stiffness_kg_per_cm` kullanılır; geçici taşta ayrı bir r_i yoktur (kaya doğrudan h'ye eklenir,
+S-07). `M_bag` iki heybenin toplam kütlesidir. Eşek **taşsız** bir nehir hücresindeyse (altındaki geçici taş
+kayboldu ya da yavaş hareketin hedefi kayboldu, D-05) e tanımsızdır ve durum SWEPT olur (D-04).
 Eşek üzerinde değilken renk skalası, eşeğin **o anki** yüküyle hesaplanan tahmini `e_i`'yi kullanır (VISUALS.md).
 Örnek: 260 kg / 50 kg/cm = 5,2 cm; 320 kg / 25 kg/cm (yosunlu) = 12,8 cm çökme.
 config: `donkey.mass_kg`, `map.stiffness_kg_per_cm`, `shrek.rock_stiffness_kg_per_cm`
@@ -136,8 +139,11 @@ config: `donkey.mass_kg`, `map.stiffness_kg_per_cm`, `shrek.rock_stiffness_kg_pe
 config: `donkey.mass_kg`
 
 **D-03 Kayma (yalnızca hareket başlangıcında).** `p_slip = min(1, p₀ + κ·δ²·μ_i)`, μ_i ayrılınan taşın kayma
-çarpanı (kıyıda μ = 0, yani kıyıdan çıkarken kayma yoktur). Kayınca ağır taraftaki **en üst** yük düşer
-(`ItemDropped(cause=slip)`); hareket yine gerçekleşir. Düşen yük ayrılınan hücreye düşer (I-04).
+çarpanı: yosunlu kalıcı taşta `mossy_slip_multiplier`, öteki kalıcı taşlarda ve geçici taşta 1 (2026-10-23
+kararı). Denetim yalnız bir **taştan** ayrılırken ve heybelerde en az bir yük varken yapılır; kıyıdan çıkarken
+kayma yoktur (p = 0; formüldeki p₀ kıyıya uygulanmaz). Kayma `u_slip[0] < p_slip` ile olur; δ = 0 ise taraf
+`u_slip[1] < 0,5` → sol, aksi hâlde sağ. Kayınca ağır taraftaki **en üst** yük düşer
+(`DonkeySlipped`, `ItemDropped(cause=slip)`); hareket yine gerçekleşir. Düşen yük ayrılınan hücreye düşer (I-04).
 Örnek: 50 kg dengesizlik → δ = 0,20 → p = 0,09; yosunlu taşta 0,13.
 config: `donkey.slip_base_prob`, `donkey.slip_kappa`
 
@@ -148,59 +154,81 @@ config: `donkey.slip_base_prob`, `donkey.slip_kappa`
 | d₀ ≤ d < d₁ | ANKLE |
 | d₁ ≤ d < d₂ | KNEE |
 | d ≥ d₂ | SWEPT |
-Kıyıda d tanımsızdır, durum DRY'dır. Eşeğin altındaki geçici taş kaybolursa (S-07) durum doğrudan SWEPT olur.
+Kıyıda d tanımsızdır (`depth = NaN`), durum DRY'dır. Eşek taşsız bir nehir hücresindeyse (altındaki geçici taş
+kayboldu, S-07, ya da yavaş hareketin hedefi kayboldu, D-05) durum doğrudan SWEPT olur
+(`DonkeySwept(cause=stone_vanished)`, `depth_cm = null`). Durum DRY/ANKLE/KNEE arasında değişince
+`DonkeyDepthChanged` yayılır; SWEPT için `DonkeySwept` yayılır, `DonkeyDepthChanged` yayılmaz.
 config: `donkey.depth_ankle_cm` (d₀), `donkey.depth_knee_cm` (d₁), `donkey.depth_swept_cm` (d₂)
 
 **D-05 Hareket.** Hedef hücre graf içindeyse (M-01) hareket geçerlidir; değilse eylem no-op olur
 (`ActionRejected`). Hareket başlarken eşeğin durumu DRY ise hareket aynı tick'te tamamlanır. ANKLE ya da
 KNEE ise `slow_move_ticks` tick sürer: hareket başlatılır, sonraki tick'lerde eşeğin girdisi yok sayılır ve son
-tick'te eşek hedefe geçer. *(Netleştirme: prompt yalnız BİLEK için yavaşlama tanımlıyordu; DİZ'de daha hızlı
+tick'te eşek hedefe geçer. Hareket sürerken eşek çıkış hücresindedir (derinlik oradan hesaplanır).
+`slow_move_ticks = 1` ise hareket anında tamamlanır. Hedef varış tick'inde yeniden denetlenmez: hedefteki geçici
+taş bu arada kaybolduysa eşek yine geçer ve adım 7'de SWEPT olur (2026-10-23 kararı; zamanlama hatası can
+götürür). Eşek oyuna güney kıyısında, `⌊C/2⌋` sütununda başlar (Shrek'le aynı sütun, S-06 teslimi ilk tick'ten
+mümkün; 2026-10-23 kararı). *(Netleştirme: prompt yalnız BİLEK için yavaşlama tanımlıyordu; DİZ'de daha hızlı
 olmak tutarsız olacağından DİZ'e de uygulanır.)*
 config: `donkey.slow_move_ticks`
 
-**D-06 Diz kaybı.** Durum KNEE iken her tick `knee_drop_prob` olasılıkla ağır taraftaki en üst yük düşer
-(`ItemDropped(cause=knee)`); heybeler boşsa etkisizdir.
+**D-06 Diz kaybı.** Durum KNEE iken her tick `knee_drop_prob` olasılıkla (`u_slip[2] < knee_drop_prob`)
+ağır taraftaki en üst yük düşer (`ItemDropped(cause=knee)`); δ = 0 ise taraf `u_slip[3] < 0,5` → sol. Heybeler
+boşsa etkisizdir.
 config: `donkey.knee_drop_prob`
 
 **D-07 Sürüklenme ve yeniden doğuş.** Durum SWEPT olduğunda: heybelerdeki tüm yükler eşeğin hücresine düşer
 (`cause=swept`), can 1 azalır (`DonkeySwept`, `LifeLost`), eşek aynı sütunda başlangıç kıyısında **anında**
 yeniden doğar (`DonkeyRespawned`); duruş ve süren hareket iptal olur; dokunulmazlık yoktur. Can 0 olursa
-`GameOver(reason=lives)`.
+eşek yine kıyıya konur ama `DonkeyRespawned` yayılmaz; `GameOver(reason=lives)`. Olay sırası: `DonkeySwept`,
+düşen her yük için (kimlik sırasıyla) `ItemDropped` + I-04 olayları, `LifeLost`, varsa `DonkeyStance(NONE, swept)`,
+`DonkeyRespawned`, gerekiyorsa `GameOver`.
 config: `time.lives`, `donkey.respawn_delay_ticks` (V0'da 0; ileride gecikme için ayrıldı)
 
 **D-08 Yakalama duruşu.** `STANCE_LEFT/RIGHT` eylemi `stance` ve `stance_since = t` değerlerini atar. Duruş şu
 durumlarda biter: eşek hareket eylemi verirse, sürüklenirse, ya da `t − stance_since ≥ stance_max_ticks` olursa.
 Duruş ancak **alındığı tick'ten sonraki** tick'lerde yakalama sağlar (`t > stance_since`). Yani yük iniş
 anında eşek en az bir tick önce durmuş olmalıdır. NOOP duruşu bozmaz; aynı ya da öteki tarafa yeni bir duruş
-`stance_since`'i yeniler.
+`stance_since`'i yeniler. Süre adım 11'de, `t` artmadan önce denetlenir: t₀'da alınan duruş t₀ + 1 … t₀ +
+`stance_max_ticks` tick'lerinde yakalama sağlar. Duruş kıyıda da alınabilir; uçuşta yakalama yalnız nehirde
+(S-05), teslim yalnız güney kıyısında (S-06) olur, kuzey kıyıda duruşun etkisi yoktur.
 config: `donkey.stance_max_ticks`
 
 **D-09 Heybeler.** İki LIFO yığın. Bir yük, seçilen tarafa ancak `mass + m ≤ bag_max_kg_per_side` ve
 `volume + v ≤ bag_max_volume_per_side` ise girer. Kapasite hiçbir koşulda aşılmaz (değişmez).
 config: `donkey.bag_max_kg_per_side`, `donkey.bag_max_volume_per_side`
 
-**D-10 Teslimat.** Eşek kuzey kıyısındayken (r = R) her tick heybedeki tüm yükler `DELIVERED` olur, puanlar
-skora eklenir. Tuş gerekmez.
+**D-10 Teslimat.** Eşek kuzey kıyısındayken (r = R) her tick heybedeki tüm yükler, kimlik sırasıyla,
+`DELIVERED` olur, puanlar skora eklenir. Tuş gerekmez.
 config: `items.types.*.points`
 
 ---
 
 ## 5. Shrek (S)
 
-**S-01 Kıyıda yürüme.** `move = W/E` sütunu ±1 değiştirir, [0, C−1] dışına çıkamaz. Baraj aktifken yürüme
-yok sayılır.
+**S-01 Kıyıda yürüme.** `move = W/E` sütunu ±1 değiştirir, [0, C−1] aralığına sessizce kırpılır; yalnız değişince
+`ShrekMoved`. Bu tick baraj tutuluyorsa (S-03) yürüme yok sayılır. Shrek oyuna `⌊C/2⌋` sütununda başlar
+(2026-10-23 kararı; türetilir, config anahtarı yoktur).
 
-**S-02 Nişan.** `aim = UP/DOWN` `aim_row`'u ±1 değiştirir, [0, R−1] aralığına kırpılır. Nişan hücresi her zaman
-`(aim_row, shrek.col)`. Nişan, aynı tick'teki yetenekten önce uygulanır.
+**S-02 Nişan.** `aim = UP/DOWN` `aim_row`'u ±1 değiştirir, [0, R−1] aralığına sessizce kırpılır; yalnız değişince
+`ShrekAimed`. Nişan hücresi her zaman `(aim_row, shrek.col)`. Nişan, aynı tick'teki yetenekten önce uygulanır.
+Başlangıçta `aim_row = 0` (Shrek'e en yakın satır).
 
-**S-03 Yetenek dışlaması ve cooldown.** Bir tick'te en çok bir yetenek. Baraj aktifken THROW ve ROCK geçersizdir.
-Cooldown'ı sıfırdan büyük bir yetenek ya da koşulu sağlanmayan bir yetenek no-op olur ve cooldown harcamaz
-(`ActionRejected`).
+**S-03 Yetenek dışlaması ve cooldown.** Bir tick'te en çok bir yetenek (eylemin tek bir `ability` bileşeni
+vardır). "Bu tick baraj tutuluyor" = `ability = DAM` ve `burst_lock` yok; o zaman yürüme geçersizdir. THROW ya da
+ROCK gelmesi barajı bırakır (S-08), yani "bırak ve at" tek tick'tir; bırakılan tick'te yürüme de serbesttir
+(TICK adım 2a; 2026-10-23 netleştirmesi). Cooldown'ı sıfırdan büyük bir yetenek ya da koşulu sağlanmayan bir
+yetenek no-op olur ve cooldown harcamaz (`ActionRejected`; önce cooldown, sonra koşul denetlenir). Koşullar:
+THROW için kuyruk boş olmamalı; ROCK için hedef bir su hücresiyse geçici taş sınırı dolu olmamalı. Kullanılan
+yetenek cooldown'ı `n` yapar; adım 11'de 1 azalır, yani `n` tick sonra yeniden kullanılabilir (`n = 0` ise her
+tick).
 config: `shrek.throw_cooldown_ticks`, `shrek.rock_cooldown_ticks`
 
 **S-04 Fırlatma (atış).** Kuyruğun başındaki yük, nişan hücresine doğru atılır. Uçuş süresi `throw_flight_ticks`.
 İniş noktası atış anında çekilir: `landing = target + σ·(z₁, z₂)`, z ~ N(0, I₂) (`rng_throw`),
-`σ = σ₀ + σ₁·(aim_row + 1) + σ₂·m`. Burada `aim_row + 1` Shrek'e satır cinsinden uzaklıktır.
+`σ = σ₀ + σ₁·(aim_row + 1) + σ₂·m`. Burada `aim_row + 1` Shrek'e satır cinsinden uzaklıktır, m yükün kütlesi.
+`z₁` satıra, `z₂` sütuna eklenir (`u_throw[0]`, `u_throw[1]`). Hedef, bu tick'in yürüme ve nişanından sonraki
+`(aim_row, col)`'dur. Mermi atıldığı tick'in adım 4'ünde ilerlemez (dalgalardaki gibi): `throw_flight_ticks = 2`
+ile t'de atılan yük t + 2'de iner (TICK zamanlama örneği).
 config: `shrek.throw_flight_ticks`, `shrek.throw_sigma0_cells`, `shrek.throw_sigma_per_row_cells`, `shrek.throw_sigma_per_kg_cells`
 
 **S-05 İniş çözümü.** Bir mermi indiğinde (`ticks_left = 0`):
@@ -209,23 +237,33 @@ config: `shrek.throw_flight_ticks`, `shrek.throw_sigma0_cells`, `shrek.throw_sig
 2. Aksi hâlde `ItemMissed`. İniş hücresi `round(landing)`:
    - satır < 0 (güney kıyısı) → yük kuyruğun sonuna döner (`ItemReturnedToBank`; kuyruk doluysa `LOST(bank_overflow)`);
    - satır > R − 1 ya da sütun ızgara dışında → `LOST(off_map)`;
-   - aksi hâlde yük o hücrede suya düşer (I-04). Taş hücresine düşen yük de kayarak suya düşer.
+   - aksi hâlde yük o hücrede suya düşer (I-04), konumu `(satır, x = iniş sütunu)` (sürekli). Taş hücresine düşen
+     yük de kayarak suya düşer.
+
+`ItemMissed.reason` ilk tutan koşuldur: eşek nehirde değil → `donkey_on_bank`; duruş yok → `no_stance`;
+`t ≤ stance_since` → `stance_too_late`; aksi hâlde `out_of_radius`.
+Yuvarlama: `round(x) = ⌊x + 0,5⌋` (yarım yukarı). Python ve numpy'nin "bankacı yuvarlaması" (`round(2,5) = 2`)
+kullanılmaz; böylece güney kıyısı ölçütü ENTITIES'teki "satır < −0,5" ile aynıdır.
 config: `shrek.catch_radius_cells`
 
 **S-06 Kıyıda teslim (handoff).** THROW anında eşek güney kıyısında, Shrek'le aynı sütunda ve duruştaysa
 (D-08'in "bir tick önce" koşulu burada aranmaz) atış gürültüsüz bir teslime dönüşür: mermi `kind = HANDOFF`,
 uçuş `bank_load_ticks`. İnişte eşek hâlâ aynı yerde ve duruştaysa yük seçilen heybeye girer
-(`ItemCaught(source=handoff)`). Eşek ayrılmışsa ya da heybe sığmıyorsa yük kuyruğun sonuna döner. Normal
-cooldown uygulanır.
+(`ItemCaught(source=handoff)`, `miss_distance = 0`). Eşek ayrılmışsa ya da heybe sığmıyorsa yük kuyruğun sonuna
+döner (`ItemReturnedToBank(cause=handoff_cancelled)`). Normal cooldown uygulanır. Teslimin hedefi `(−1, col)`,
+σ = 0'dır; `u_throw` kullanılmaz (yine çekilir, R-02).
 config: `shrek.bank_load_ticks`
 
 **S-07 Kaya at.** Nişan hücresine gürültüsüz bir kaya atılır (uçuş yok; etkisi aynı tick'te).
 - Su hücresi: `rock_max_active` sınırı dolu değilse yeni geçici taş doğar, `h = rock_initial_h_cm`. Sınır doluysa
-  no-op olur, cooldown harcanmaz.
+  no-op olur, cooldown harcanmaz. Sınır yalnız doğuşu kısıtlar; var olan bir taşı yükseltmek sınır doluyken de
+  geçerlidir.
 - Kalıcı taş: `r_i += rock_raise_cm`; r_i her tick `rock_raise_decay_cm_per_tick` azalır, alt sınır 0.
 - Geçici taş: yüksekliğine doğrudan `rock_raise_cm` eklenir (tazeleme).
-Geçici taş her tick `rock_sink_cm_per_tick` batar; `h < rock_vanish_h_cm` olunca kaybolur. Kaybolduğu anda
-eşek üzerindeyse eşek sürüklenir (D-04).
+Geçici taş her tick (doğduğu tick dahil, adım 6) `rock_sink_cm_per_tick` batar; `h < rock_vanish_h_cm` olunca
+kaybolur. Böylece varsayılanla taş 25 tick'in sonunda var olur (Ek A.6). Kaybolduğu anda eşek üzerindeyse eşek
+sürüklenir (D-04). r_i'nin sönümü de aynı tick başlar. Geçici taş kimlikleri `Stones.next_temp_id` sayacından
+gelir.
 config: `shrek.rock_*`
 
 **S-08 Baraj (kanalize).** `ability = DAM` olan her tick baraj aktiftir. Aktif değilken DAM gelirse baraj
@@ -240,11 +278,14 @@ config: `dam.*`
 ## 6. Yükler (I)
 
 **I-01 Varış.** Her tick `N_t ~ Poisson(λ_items)` yük doğar; türü `types.*.prob` dağılımından çekilir
-(`rng_items`).
+(`rng_items`). Çekiliş biçimi W-02 ile aynıdır: tek çağrıda N_t ve N_t uniform `U_j`; tür, türlerin **ada göre
+sıralı** listesinde birikimli olasılığı `U_j`'yi ilk aşan türdür (ters CDF). Sıralı ad, YAML'daki yazım sırasından
+bağımsızdır; `config_hash` da anahtarları sıraladığı için aynı hash'li iki config aynı yükleri üretir. Yük
+kimliği doğuş sırasıdır ve `GameState.items` içindeki konumuna eşittir (yükler silinmez, ayrı sayaç gerekmez).
 config: `items.arrival_rate_per_tick`, `items.types.*.prob`
 
 **I-02 Kıyı kuyruğu.** FIFO, kapasite `bank_capacity`. Doluyken doğan yük `LOST(bank_overflow)` olur
-(kuyruk sistemi: M/D/1/K benzeri kayıplı kuyruk).
+(kuyruk sistemi: M/D/1/K benzeri kayıplı kuyruk): önce `ItemArrived`, sonra `ItemLost(origin=null)`.
 config: `items.bank_capacity`
 
 **I-03 Yaşam döngüsü.** ENTITIES.md'deki durum makinesi. Her yük her tick tam olarak bir durumdadır;
@@ -252,12 +293,13 @@ DELIVERED ve LOST soğurucudur.
 
 **I-04 Suya düşme ve yüzme.** `(r, x)` konumunda suya düşen yük: `floats = true` ise `FLOATING` olur, konumu
 `(r, x)`'tir; değilse `ItemSank` ve `LOST(sank)` olur. Yüzen yük her tick `x += flow_speed` ile doğuya
-sürüklenir; `x > C − 0,5` olunca `LOST(drifted_off)` olur. Satır değişmez.
+sürüklenir; `x > C − 0,5` olunca `LOST(drifted_off)` olur. Satır değişmez. Heybeden düşen yük (D-03, D-06,
+D-07, S-05 sekme) eşeğin hücresinde, `x = c` ile suya düşer.
 config: `water.flow_speed_cols_per_tick`, `items.types.*.floats`
 
 **I-05 Yüzen yükü yakalama.** Eşek `(r, round(x))` hücresindeyse, D-08'e göre geçerli duruştaysa ve yük
-seçilen heybeye sığıyorsa `ItemCaught(source=floating)`. Sığmıyorsa yakalama denenmez (sekme yok). Aynı
-tick'te birden çok uygun yük varsa kimlik sırasıyla sığdığı kadar yakalanır.
+seçilen heybeye sığıyorsa `ItemCaught(source=floating, miss_distance = |x − c|)`. Sığmıyorsa yakalama denenmez
+(sekme yok). Aynı tick'te birden çok uygun yük varsa kimlik sırasıyla sığdığı kadar yakalanır.
 
 ---
 

@@ -20,11 +20,11 @@ büyür.
 
 | Olay | Alanlar | Adım | Tüketici |
 |---|---|---|---|
-| `ActionRejected` | `role`, `component`, `reason` (`cooldown`, `dam_active`, `queue_empty`, `rock_limit`, `no_stone`, `busy_moving`, `burst_lock`) | 1, 3 | L, U |
+| `ActionRejected` | `role` (`donkey`/`shrek`), `component` (`action` eşek için; `move`/`ability` Shrek için), `reason` (`cooldown`, `dam_active`, `queue_empty`, `rock_limit`, `no_stone`, `busy_moving`, `burst_lock`) | 1, 3 | L, U |
 | `ShrekMoved` | `from_col`, `to_col` | 2 | R, L |
 | `ShrekAimed` | `row` | 2 | R, L |
-| `DonkeyMoveStarted` | `from`, `to`, `ticks` | 3 | R, L |
-| `DonkeyMoved` | `from`, `to` | 3 | R, L, U |
+| `DonkeyMoveStarted` | `from_cell`, `to_cell`, `ticks` | 3 | R, L |
+| `DonkeyMoved` | `from_cell`, `to_cell` | 3 | R, L, U |
 | `DonkeySlipped` | `side`, `p_slip`, `delta`, `mossy` | 3 | R, L, U |
 | `DonkeyStance` | `side` (`LEFT`/`RIGHT`/`NONE`), `reason` (`set`, `moved`, `expired`, `swept`) | 3, 7, 11 | R, L, U |
 
@@ -41,8 +41,11 @@ büyür.
 | `ItemDropped` | `item_id`, `side`, `cause` (`knee`/`slip`/`swept`) | 3, 7 | R, L, U |
 | `ItemFloated` | `item_id`, `row`, `x` | 3, 4, 7 | R, L |
 | `ItemSank` | `item_id`, `row`, `col` | 3, 4, 7 | R, L |
-| `ItemLost` | `item_id`, `reason` (`bank_overflow`, `sank`, `drifted_off`, `off_map`), `origin` (son durum) | 3, 4, 7, 8, 9 | L, Ö, U |
+| `ItemLost` | `item_id`, `reason` (`bank_overflow`, `sank`, `drifted_off`, `off_map`), `origin` (son durum; varışta taşan yük için `null`) | 3, 4, 7, 8, 9 | L, Ö, U |
 | `ItemDelivered` | `item_id`, `kind`, `points` | 10 | R, L, Ö, U |
+
+Hücreler `[satır, sütun]`, sürekli konumlar `[satır, x]` olarak yazılır (JSON dizisi). `from_cell`/`to_cell`
+adları, `from`'un Python'da anahtar sözcük olmasındandır (2026-10-23).
 
 Not: batan bir yük için `ItemSank` ve hemen ardından `ItemLost(reason=sank)` yayılır. Sayımlar (korunum, kayıp
 dağılımı) yalnızca `ItemLost`'u kullanır; `ItemSank` görsel/ses içindir.
@@ -51,8 +54,8 @@ dağılımı) yalnızca `ItemLost`'u kullanır; `ItemSank` görsel/ses içindir.
 
 | Olay | Alanlar | Adım | Tüketici |
 |---|---|---|---|
-| `DonkeyDepthChanged` | `old`, `new`, `depth_cm`, `row`, `col` | 7 | R, L, U |
-| `DonkeySwept` | `row`, `col`, `depth_cm`, `cause` (`depth`/`stone_vanished`), `items_dropped` | 7 | R, L, Ö, U |
+| `DonkeyDepthChanged` | `old`, `new` (`DRY`/`ANKLE`/`KNEE`; SWEPT için yayılmaz), `depth_cm` (kıyıda `null`), `row`, `col` | 7 | R, L, U |
+| `DonkeySwept` | `row`, `col`, `depth_cm` (`stone_vanished`'da `null`), `cause` (`depth`/`stone_vanished`), `items_dropped` | 7 | R, L, Ö, U |
 | `LifeLost` | `lives_left` | 7 | R, L, Ö, U |
 | `DonkeyRespawned` | `col` | 7 | R, L |
 

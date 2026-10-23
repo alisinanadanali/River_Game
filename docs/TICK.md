@@ -39,8 +39,11 @@ buradaki bir sıra ya da kural değişikliği kodda yapılmazsa test kırmızı 
 - **Çıktı:** doğrulanmış eylemler; geçersiz bileşen NOOP/NONE olur.
 - **Kurallar:** eşek yavaş hareketteyse (`move_remaining > 0`) eşek eylemi yok sayılır. Hedef hücrenin graf
   içinde olup olmadığı burada **değil**, adım 3'te kontrol edilir; böylece adım 2'de doğan kaya hesaba katılır.
-  Baraj aktifse Shrek'in `move`, THROW ve ROCK bileşenleri no-op olur. Cooldown > 0,
-  kuyruk boş ya da geçici taş sınırı doluysa yetenek no-op olur. `burst_lock` varsa DAM no-op olur.
+  `burst_lock` varsa DAM no-op olur; DAM dışında bir yetenek ya da NONE gelirse kilit burada kalkar (S-08). Bu tick
+  baraj tutuluyorsa (`ability = DAM` ve kilit yok, S-03) Shrek'in `move` bileşeni no-op olur. THROW ya da ROCK
+  gelmesi barajı bırakır (adım 2a), reddedilmez. Cooldown > 0, kuyruk boş (THROW) ya da hedef su hücresiyken
+  geçici taş sınırı dolu (ROCK) ise yetenek no-op olur. ROCK'un hedefi, bu tick'in yürüme ve nişanından sonraki
+  hücredir; burada önceden hesaplanır. Yavaş hareket sürerken yalnız NOOP dışındaki eşek eylemleri reddedilir.
 - **Olay:** her reddedilen bileşen için `ActionRejected(role, component, reason)`. Bu olay ödüle girmez;
   hata ayıklama ve RL tanısı içindir.
 - **Gerekçe:** sonraki adımlar yalnız geçerli eylemleri görür. Böylece kural kodu savunmacı kontrollerle dolmaz.
@@ -57,8 +60,9 @@ Alt sıra: **(a)** baraj bırakma/başlatma → **(b)** yürüme → **(c)** ni�
 
 ### 3. Eşek eylemi
 - Süren yavaş hareket varsa `move_remaining` azalır; 0 olunca eşek hedefe geçer (`DonkeyMoved`).
-- Yeni hareket: hedef graf dışındaysa no-op ve `ActionRejected(reason=no_stone)` (D-05); geçerliyse duruş bozulur. Önce kayma kontrolü yapılır (D-03, `u_slip[0]`; δ = 0 ise taraf `u_slip[1]` ile
-  seçilir), sonra durum DRY ise anında geçiş, değilse `DonkeyMoveStarted` ve `move_remaining = slow_move_ticks − 1`.
+- Yeni hareket: hedef graf dışındaysa no-op ve `ActionRejected(reason=no_stone)` (D-05); geçerliyse duruş bozulur. Önce kayma kontrolü yapılır (D-03, yalnız taştan ayrılırken ve heybe doluyken; `u_slip[0]`; δ = 0 ise taraf `u_slip[1]` ile
+  seçilir), sonra durum DRY ise (ya da `slow_move_ticks = 1`) anında geçiş, değilse `DonkeyMoveStarted` ve
+  `move_remaining = slow_move_ticks − 1`. Süren hareketin hedefi varışta yeniden denetlenmez (D-05).
 - STANCE: D-08.
 - Kayan yük ayrılınan hücrede suya düşer (I-04).
 - **Gerekçe:** hareket, su güncellemesinden (adım 5) **önce** gelir. Oyuncu karar anında gördüğü duruma göre
@@ -67,7 +71,8 @@ Alt sıra: **(a)** baraj bırakma/başlatma → **(b)** yürüme → **(c)** ni�
   Dalga göstergesi ve hata ayıklama katmanındaki tahmin bu bedeli telafi eder.
 
 ### 4. Mermiler
-- Tüm mermilerde `ticks_left` 1 azalır; 0 olanlar S-05/S-06'ya göre çözülür.
+- Bu tick atılanlar dışındaki tüm mermilerde `ticks_left` 1 azalır; 0 olanlar S-05/S-06'ya göre, yük kimliği
+  sırasıyla çözülür. Bu tick atılan mermi ilk kez sonraki tick azalır (S-04).
 - Eşeğin konumu ve duruşu adım 3'ten sonraki hâlidir. Bu tick hareket eden eşeğin duruşu bozulmuş olur.
 - **Gerekçe:** iniş, eşeğin bu tick'teki kararından sonra çözülür. "Bir tick önce dur" kuralı (D-08) yakalamayı
   bir öngörü işi yapar, refleks işi değil. 0,6 sn'lik tick'te bu, insan için adil bir penceredir.
@@ -82,12 +87,13 @@ Alt sıra: **(a)** OU adımı → **(b)** dalgalar ilerler → **(c)** emilim (W
   doğan dalga bu tick ilerlemez; ilk konumu x = −3s'dir.
 
 ### 6. Taşlar
-- Geçici taşlar `rock_sink_cm_per_tick` batar; kalıcı taşların `raise_h` değeri söner.
+- Geçici taşlar (bu tick doğanlar dahil) `rock_sink_cm_per_tick` batar; kalıcı taşların `raise_h` değeri söner.
 - `h < rock_vanish_h_cm` olan geçici taş silinir (`TempStoneVanished`). Üzerindeki eşek adım 7'de SWEPT olur.
 - **Gerekçe:** derinlik (adım 7), bu tick'in son taş yüksekliğini ve son su seviyesini birlikte görür.
 
 ### 7. Derinlik
-- Eşek nehirdeyse D-01 ile e, D-04 ile d ve durum hesaplanır. Durum değiştiyse `DonkeyDepthChanged`.
+- Eşek nehirdeyse D-01 ile e, D-04 ile d ve durum hesaplanır. Durum değiştiyse `DonkeyDepthChanged`. Eşek taşsız
+  bir nehir hücresindeyse (geçici taş kayboldu ya da yavaş hareketin hedefi kayboldu) durum SWEPT olur.
 - KNEE: `u_slip[2] < knee_drop_prob` ise ağır taraftaki üst yük düşer (taraf δ = 0 ise `u_slip[3]` ile).
 - SWEPT: D-07, yeniden doğuş aynı tick'te olur. Can 0'a inerse `GameOver(reason=lives)` ve kalan adımlar yine
   çalışır (olay akışı tutarlı kalsın diye), ama sonraki `step` çağrıları hata verir.
@@ -109,7 +115,7 @@ Alt sıra: **(a)** OU adımı → **(b)** dalgalar ilerler → **(c)** emilim (W
 ### 11. Saat
 - Cooldown'lar 1 azalır (alt sınır 0). Cooldown `n` olan bir yetenek, kullanıldığı tick'ten `n` tick sonra
   yeniden kullanılabilir.
-- Duruş süresi dolduysa (`t − stance_since ≥ stance_max_ticks`) duruş biter.
+- Duruş süresi dolduysa (`t − stance_since ≥ stance_max_ticks`, `t` artmadan önce) duruş biter.
 - `t += 1`. `t = game_length_ticks` ise `GameOver(reason=time)`.
 
 ### 12. Olaylar

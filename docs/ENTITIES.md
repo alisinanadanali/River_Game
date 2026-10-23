@@ -29,11 +29,15 @@ dizilerin içeriğiyle tanımlıdır (`NaN` = `NaN`), böylece `GameState` karş
 | `seed` | int | — | — | Oyunun ana seed'i (R-01) |
 | `regen_attempt` | int | — | ≥ 0 | Koşulu sağlayan denemenin sırası, 0'dan (M-05) |
 
-## Stone dinamiği (StoneState)
+## Stones (taş dinamiği)
+
+Kalıcı taşların dinamik kısmı ve geçici taşlar tek alt durumdadır (dalgalardaki `Water` gibi).
 
 | Alan | Tip | Birim | Açıklama |
 |---|---|---|---|
-| `raise_h` | float[R,C] | cm | Kaya at ile eklenen geçici yükselti r_i(t), ≥ 0, sönümlü (S-07) |
+| `raise_h` | float[R,C] | cm | Kaya at ile eklenen geçici yükselti r_i(t), ≥ 0, sönümlü (S-07); salt okunur, su hücresinde 0 |
+| `temp` | tuple[TempStone] | — | Geçici taşlar, kimlik sırasıyla; ≤ `rock_max_active` (INV-08) |
+| `next_temp_id` | int | — | Sıradaki geçici taş kimliği |
 
 ## TempStone (geçici taş)
 
@@ -83,7 +87,7 @@ dizilerin içeriğiyle tanımlıdır (`NaN` = `NaN`), böylece `GameState` karş
 |---|---|---|---|---|
 | `row`, `col` | int | hücre | r ∈ [−1, R] | Konum |
 | `depth_state` | enum | — | DRY/ANKLE/KNEE | Son hesaplanan durum (D-04) |
-| `depth` | float | cm | — | Son hesaplanan d |
+| `depth` | float | cm | — | Son hesaplanan d; kıyıda `NaN` |
 | `move_target` | (int,int) \| None | — | — | Süren yavaş hareketin hedefi (D-05) |
 | `move_remaining` | int | tick | ≥ 0 | Yavaş hareketin kalan süresi |
 | `stance` | enum | — | NONE/LEFT/RIGHT | Yakalama duruşu (D-08) |
@@ -113,8 +117,8 @@ dizilerin içeriğiyle tanımlıdır (`NaN` = `NaN`), böylece `GameState` karş
 | Alan | Tip | Birim | Açıklama |
 |---|---|---|---|
 | `id` | int | — | Doğuş sırasına göre artan |
-| `kind` | enum | — | `apple_crate` / `potato_sack` / `watermelon` |
-| `mass`, `volume`, `points`, `floats` | — | kg, hacim, puan, bool | Türden (config `items.types`) |
+| `kind` | str | — | `items.types` anahtarı: `apple_crate` / `potato_sack` / `watermelon` |
+| `mass`, `volume`, `points`, `floats` | — | kg, hacim, puan, bool | Saklanmaz; türden okunur (config `items.types[kind]`) |
 | `status` | enum | — | Aşağıdaki durum makinesi |
 | `pos` | (float, float) \| None | hücre | FLOATING'de (satır, x), IN_FLIGHT'ta hedef |
 | `lost_reason` | enum \| None | — | `bank_overflow`, `sank`, `drifted_off`, `off_map` |
@@ -129,6 +133,7 @@ dizilerin içeriğiyle tanımlıdır (`NaN` = `NaN`), böylece `GameState` karş
 | `landing` | (float,float) | hücre | Atış anında çekilen iniş noktası (S-04) |
 | `sigma` | float | hücre | Kullanılan σ (görsel halka için) |
 | `ticks_left` | int | tick | İnişe kalan süre |
+| `thrown_at` | int | tick | Atıldığı tick; o tick'in adım 4'ünde azaltılmaz (S-04) |
 
 ## Bank
 
@@ -147,16 +152,17 @@ Kodda `engine/state.py`. Alanlar, onları kullanan kurallarla birlikte eklenir (
 | `config` | Config | Doğrulanmış, değişmez config (ADR-008). `step` imzasında config yoktur; kurallar parametreleri buradan okur |
 | `t` | int | Tick sayacı; sıradaki `step` çağrısı t tick'ini işler |
 | `world` | World | Değişmez harita |
-| `stones` | StoneState | Kalıcı taşların dinamik kısmı |
-| `temp_stones` | tuple[TempStone] | ≤ `rock_max_active` |
+| `stones` | Stones | Kalıcı taşların dinamik kısmı ve geçici taşlar |
 | `water`, `dam` | Water, Dam | — |
 | `donkey`, `shrek` | Donkey, Shrek | — |
-| `items` | tuple[Item] | Doğmuş tüm yükler (silinmez; korunum testi için) |
+| `items` | tuple[Item] | Doğmuş tüm yükler (silinmez; korunum testi için); `items[i].id == i` |
 | `projectiles` | tuple[Projectile] | — |
 | `bank` | Bank | — |
 | `score` | int | Teslim puanı |
 | `game_over` | enum \| None | `TIME` / `LIVES` |
-| `next_ids` | dict | Yük ve geçici taş kimlik sayaçları (dalga sayacı `Water.next_wave_id`) |
+
+Kimlik sayaçları ilgili alt durumdadır: dalgalar `Water.next_wave_id`, geçici taşlar `Stones.next_temp_id`.
+Yükler silinmediği için yeni yükün kimliği `len(items)`'tır (I-01).
 
 RNG akışları durumun parçası değildir: `step` onları ayrı alır ve yeni değerlerini ayrı döndürür (ADR-011,
 `engine/rng.py` `Rngs`).
