@@ -11,7 +11,7 @@ from engine.actions import Actions
 from engine.donkey import depth_stage, donkey_stage, expire_stance
 from engine.events import Event, GameOver, GameOverReason
 from engine.rng import Rngs, draw_blocks
-from engine.shrek import shrek_stage
+from engine.shrek import cool_down, shrek_stage
 from engine.state import GameState
 from engine.tick import Tick
 from engine.validation import validate_stage
@@ -126,8 +126,8 @@ def _delivery(tick: Tick) -> Tick:
 def _clock(tick: Tick) -> Tick:
     """TICK.md step 11: clock. Rules: S-03, D-08.
 
-    Stance expiry (D-08), then t += 1; the game ends by time when t reaches game_length_ticks (unless step 7
-    already ended it). Cooldowns (S-03) arrive with their rule.
+    Cooldowns (S-03), stance expiry (D-08), then t += 1; the game ends by time when t reaches game_length_ticks
+    (unless step 7 already ended it).
     """
     tick = expire_stance(tick)
     state = tick.state
@@ -135,7 +135,9 @@ def _clock(tick: Tick) -> Tick:
     ends = state.game_over is None and t == state.config.time.game_length_ticks
     tick = dataclasses.replace(
         tick,
-        state=dataclasses.replace(state, t=t, game_over=GameOverReason.TIME if ends else state.game_over),
+        state=dataclasses.replace(
+            state, shrek=cool_down(state.shrek), t=t, game_over=GameOverReason.TIME if ends else state.game_over
+        ),
     )
     if ends:
         tick = tick.emit(GameOver, reason=GameOverReason.TIME, score=state.score)

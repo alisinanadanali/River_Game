@@ -5,13 +5,12 @@ import math
 
 import pytest
 
-from engine.actions import Actions
 from engine.events import WaveAbsorbed, WaveOrigin
 from engine.state import new_game
 from engine.step import step
 from engine.water import Dam, Wave, absorb_waves, start_dam
 
-from tests.support import config_with
+from tests.support import HOLD_DAM, config_with
 
 QUIET = config_with({"water": {"wave_rate_per_tick": 0.0}})
 V = QUIET.water.wave_speed_cols_per_tick
@@ -51,7 +50,7 @@ def test_absorbed_volume_goes_into_q():
         dam=DAM,
         water=dataclasses.replace(state.water, waves=(wave(3.75, amplitude=8.0, id=0),), next_wave_id=1),
     )
-    after, _, events = step(state, Actions(), rngs)    # moves 3.75 -> 4.25, crossing c_d = 4
+    after, _, events = step(state, HOLD_DAM, rngs)    # held (S-08); moves 3.75 -> 4.25, crossing c_d = 4
     volume = 8.0 * S * math.sqrt(2 * math.pi)
     assert [(e.wave_id, e.dam_col) for e in events if isinstance(e, WaveAbsorbed)] == [(0, 4)]
     assert [e.volume for e in events if isinstance(e, WaveAbsorbed)] == [pytest.approx(volume)]
@@ -68,7 +67,7 @@ def test_absorbed_wave_is_reported_before_accumulation_can_burst():
     state = dataclasses.replace(
         state, dam=DAM, water=dataclasses.replace(state.water, waves=(wave(3.75, big, 0),), next_wave_id=1)
     )
-    after, _, events = step(state, Actions(), rngs)
+    after, _, events = step(state, HOLD_DAM, rngs)
     names = [type(e).__name__ for e in events]
     assert names[:3] == ["WaveAbsorbed", "DamReleased", "WaveSpawned"]
     assert after.dam.burst_lock

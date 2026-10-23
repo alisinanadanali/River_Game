@@ -11,7 +11,7 @@ from engine.step import step
 from engine.tick import Tick
 from engine.water import release_dam, water_stage
 
-from tests.support import config_with, press_dam
+from tests.support import HOLD_DAM, config_with
 
 QUIET = config_with({"water": {"wave_rate_per_tick": 0.0}})
 S = QUIET.water.wave_width_cols
@@ -19,13 +19,12 @@ Q_IN = QUIET.dam.downstream_drop_cm * QUIET.water.wave_speed_cols_per_tick
 Q_MAX = QUIET.dam.q_max_cm_cols
 
 
-def held(ticks: int, cfg=QUIET, col: int = 4):
-    """State after holding the dam at `col` for `ticks` ticks (no release yet)."""
+def held(ticks: int, cfg=QUIET):
+    """State after Shrek held DAM for `ticks` ticks at his start column 4 (no release yet)."""
     state, rngs = new_game(cfg, 1)
     events = []
     for _ in range(ticks):
-        state, _ = press_dam(state, hold=True, col=col)
-        state, rngs, tick_events = step(state, Actions(), rngs)
+        state, rngs, tick_events = step(state, HOLD_DAM, rngs)
         events += tick_events
     return state, rngs, events
 
@@ -87,10 +86,10 @@ def test_burst_wave_does_not_move_in_its_tick():
 
 def test_burst_lock_blocks_a_held_button_until_it_is_let_go():
     state, rngs, _ = held(math.ceil(Q_MAX / Q_IN))
-    state, _ = press_dam(state, hold=True, col=4)
-    assert not state.dam.active                     # still held: ignored
-    state, _ = press_dam(state, hold=False, col=4)  # let go
-    state, _ = press_dam(state, hold=True, col=4)
+    state, rngs, _ = step(state, HOLD_DAM, rngs)
+    assert not state.dam.active                         # still held: ignored (S-08)
+    state, rngs, _ = step(state, Actions(), rngs)       # let go
+    state, rngs, _ = step(state, HOLD_DAM, rngs)
     assert state.dam.active
 
 

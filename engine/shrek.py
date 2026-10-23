@@ -10,9 +10,10 @@ import dataclasses
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from engine.actions import Aim, ShrekMove
+from engine.actions import Ability, Aim, ShrekMove
 from engine.config import Config
-from engine.events import ShrekAimed, ShrekMoved
+from engine.events import DamStarted, ReleaseReason, ShrekAimed, ShrekMoved
+from engine.water import release_dam, start_dam
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports this module
     from engine.tick import Tick
@@ -45,13 +46,23 @@ def aim(aim_row: int, direction: Aim, rows: int) -> int:
     return min(max(aim_row + step, 0), rows - 1)
 
 
+def cool_down(shrek: Shrek) -> Shrek:
+    """S-03 (TICK.md step 11): each cooldown drops by one tick, not below 0."""
+    if shrek.throw_cooldown == 0 and shrek.rock_cooldown == 0:
+        return shrek
+    return dataclasses.replace(
+        shrek, throw_cooldown=max(shrek.throw_cooldown - 1, 0), rock_cooldown=max(shrek.rock_cooldown - 1, 0)
+    )
+
+
 def aim_cell(shrek: Shrek) -> tuple[int, int]:
     """S-02: the cell Shrek aims at, (aim_row, col)."""
     return shrek.aim_row, shrek.col
 
 
 def shrek_stage(tick: Tick) -> Tick:
-    """TICK.md step 2, sub-steps (b) walk and (c) aim. (a) dam and (d) abilities arrive with S-08, S-04, S-07."""
+    """TICK.md step 2: (a) dam, (b) walk, (c) aim. (d) abilities arrive with S-04 and S-07."""
+    tick = dam_stage(tick)
     cfg, shrek, action = tick.state.config, tick.state.shrek, tick.actions.shrek
     col = walk(shrek.col, action.move, cfg.map.cols)
     row = aim(shrek.aim_row, action.aim, cfg.map.rows)
@@ -62,6 +73,18 @@ def shrek_stage(tick: Tick) -> Tick:
         tick = tick.emit(ShrekMoved, from_col=shrek.col, to_col=col)
     if row != shrek.aim_row:
         tick = tick.emit(ShrekAimed, row=row)
+    return tick
+
+
+def dam_stage(tick: Tick) -> Tick:
+    """S-08 (TICK.md step 2a): any ability but DAM lets an active dam go (W-05); DAM on an idle dam starts one."""
+    state, ability = tick.state, tick.actions.shrek.ability
+    if state.dam.active and ability is not Ability.DAM:
+        return release_dam(tick, ReleaseReason.MANUAL)
+    if not state.dam.active and ability is Ability.DAM:
+        dam = start_dam(state.dam, state.shrek.col, tick.t)
+        tick = dataclasses.replace(tick, state=dataclasses.replace(state, dam=dam))
+        return tick.emit(DamStarted, col=dam.col)
     return tick
 
 

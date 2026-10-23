@@ -235,3 +235,10 @@ class DonkeyRespawned(Event):
     """TICK.md step 7: back on the south bank in the column it was swept from (D-07)."""
 
     col: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class DamStarted(Event):
+    """TICK.md step 2(a): Shrek began holding the dam at column c_d = col (S-08, W-04)."""
+
+    col: int
