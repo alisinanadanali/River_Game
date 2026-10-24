@@ -23,6 +23,9 @@ Her faz, kabul kriterlerinin tümü sağlanınca kapanır. İş akışı her faz
 - `tools/design_calcs.py` çıktısı MODEL Ek A tablolarıyla istatistiksel tolerans içinde uyumlu.
 - Metin taktik modda tam bir oyun (300 tick) oynanabiliyor.
 - Hız: tek çekirdekte ≥ 5 000 tick/sn (RL için alt sınır; ölçülmezse yerinde güncellemeye geçiş değerlendirilir).
+  Ölçüm: `uv run python -m tools.bench` (varsayılan config, sabit seed'li rastgele eylemler, 5 tekrarın en iyisi;
+  `--stages` TICK.md adımı başına süre verir). Koruma: `uv run pytest -m perf` (makine yüküne duyarlı olduğu için
+  varsayılan test koşusunda yoktur; push'tan önce koşulur). Sonuçlar ADR-011'de.
 - Ghosting testi tablosu (CONTROLS.md §6) doldurulmuş ve varsayılan Shrek düzeni seçilmiş.
 
 ## Faz 1 — V0 oynanabilir

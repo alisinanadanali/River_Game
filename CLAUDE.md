@@ -59,10 +59,12 @@ Changing the tick order or any ADR decision requires a new/updated ADR in `docs/
 ```
 uv sync                               # install
 uv run pytest                         # all tests, hypothesis profile `dev` (fast)
-HYPOTHESIS_PROFILE=full uv run pytest # ROADMAP acceptance (>= 200 seeds); before a push
+HYPOTHESIS_PROFILE=full uv run pytest # ROADMAP acceptance (>= 200 seeds); before a push, with -m perf below
 uv run pytest tests/rules -k W05      # one rule
 uv run python -m tools.tactical_cli --seed 42 --profile percolation_edge
 uv run python -m tools.design_calcs   # re-check MODEL.md Appendix A
+uv run python -m tools.bench --stages # speed: µs/tick and ticks/s, per TICK.md step (ROADMAP >= 5 000 ticks/s)
+uv run pytest -m perf                 # the speed guard; not in the default run, run it before a push
 uv run python main.py                 # Phase 1: pygame-ce game
 ```
 
