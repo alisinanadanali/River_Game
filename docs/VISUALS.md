@@ -238,7 +238,8 @@ Bir karakterin poz dosyalarından **biri bile** okunamazsa o karakterin bütün 
 resim yarı şekil karışımı olmaz); eksik dosyalar listelenir (önizleme aracı, Faz 1'de oyun açılışı). Soyut şekil
 `fallback_size_px` boyutunda, ayak noktası alt ortada, doğuya bakan bir yüzeydir; aynı dönüşümler ona da
 uygulanır. Shrek: `fallback_color` renginde yuvarlak köşeli kare. Eşek: `fallback_color` renginde daire ve iki
-üçgen kulak. Biçim oranları `render/characters/sprites.py`'de adlandırılmış sabitlerdir.
+üçgen kulak. İkisinde de doğu tarafında koyu bir göz vardır; simetrik şekilde aynalama (yön) ancak onunla
+görünür. Biçim oranları `render/characters/sprites.py`'de adlandırılmış sabitlerdir.
 
 ### 9.5 Önizleme aracı
 
