@@ -71,5 +71,6 @@ Phase 0 in progress (see `docs/ROADMAP.md`). Done: toolchain, ghosting test, INV
 skeleton (`engine/step.py` pipeline + INV-02), world generation (`engine/world.py`, M-01 … M-05),
 water and dam physics (`engine/water.py`, W-01 … W-07), all S-, D-, I- rules (`engine/validation.py`,
 `shrek.py`, `donkey.py`, `stones.py`, `items.py`, `catching.py`; imports one-way: items ← donkey ← catching) and
-INV-01 … INV-08 under random play. State copies use `engine/evolve.py`. Next: step 9 `engine/observe.py`, then
-10 tactical CLI, 11 design_calcs, 12 performance, 14 v0.1.0.
+INV-01 … INV-08 under random play. State copies use `engine/evolve.py`. `engine/observe.py`: V0 observation =
+the whole state minus `world.seed` and projectile landings (shared, no copies). Next: step 10 tactical CLI,
+11 design_calcs, 12 performance, 14 v0.1.0.
