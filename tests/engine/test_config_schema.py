@@ -166,3 +166,64 @@ def test_wrong_type_is_rejected(raw, dotted, value):
 def test_int_is_accepted_where_float_is_expected(raw):
     # YAML `stiffness_kg_per_cm: 50` has no decimal point; it is still a valid float.
     assert validate_config(raw).map.stiffness_kg_per_cm == 50.0
+
+
+# --- render.characters and render.animation (VISUALS §9, ADR-012) ------------------------------
+
+def test_character_keys_are_read(raw):
+    chars = validate_config(raw).render.characters
+    assert chars.shrek.poses.throw.file == "assets/private/shrek_throw.png"
+    assert chars.donkey.poses.idle.faces == "left"               # the donkey image looks west
+    assert chars.shrek.poses.idle.faces == "right"
+    assert chars.donkey.poses.happy.anchor[1] == 1.0              # images are trimmed: feet on the bottom edge
+    assert set(type(chars.shrek.poses).model_fields) == {"idle", "throw", "dam"}
+    assert set(type(chars.donkey.poses).model_fields) == {"idle", "happy"}
+    assert validate_config(raw).render.animation.happy_bounces >= 1
+
+
+@pytest.mark.parametrize(
+    ("dotted", "value"),
+    [
+        ("render.characters.shrek.height_px", 0),                 # > 0
+        ("render.characters.donkey.poses.idle.anchor", [0.5, 1.2]),   # fractions of the image, [0, 1]
+        ("render.characters.donkey.poses.idle.anchor", [-0.1, 1.0]),
+        ("render.characters.donkey.poses.idle.anchor", [0.5]),        # exactly two values
+        ("render.characters.donkey.poses.idle.faces", "up"),          # left | right
+        ("render.characters.shrek.poses.dam.scale", 0),               # > 0
+        ("render.characters.shrek.fallback_color", "green"),          # #RRGGBB
+        ("render.characters.donkey.fallback_size_px", [0, 40]),       # ≥ 1 px
+        ("render.characters.shrek.poses.jump", {"file": "x.png", "anchor": [0.5, 1.0], "faces": "left", "scale": 1}),
+        ("render.animation.breath_period_s", 0),                  # > 0
+        ("render.animation.breath_scale", 1.0),                   # [0, 1): scale_y = 1 ± a stays > 0
+        ("render.animation.land_squash", 1.0),
+        ("render.animation.throw_squash", -0.1),
+        ("render.animation.throw_windup_ratio", 0),               # (0, 1)
+        ("render.animation.throw_windup_ratio", 1),
+        ("render.animation.hop_height_px", -1),                   # ≥ 0
+        ("render.animation.happy_bounces", 0),                    # ≥ 1
+        ("render.animation.swept_s", 0),                          # > 0
+        ("render.animation.dam_shake_hz", 0),                     # > 0
+    ],
+)
+def test_character_values_out_of_range_are_rejected(raw, dotted, value):
+    with pytest.raises(ValidationError):
+        validate_config(with_value(raw, dotted, value))
+
+
+@pytest.mark.parametrize(
+    ("dotted", "value"),
+    [
+        ("render.characters.donkey.poses.idle.anchor", [0, 1]),
+        ("render.animation.breath_scale", 0),
+        ("render.animation.hop_height_px", 0),
+        ("render.animation.slip_tilt_deg", 0),
+    ],
+)
+def test_character_boundary_values_are_accepted(raw, dotted, value):
+    validate_config(with_value(raw, dotted, value))
+
+
+@pytest.mark.parametrize("dotted", ["render.characters.donkey.poses.happy", "render.animation.respawn_s"])
+def test_character_keys_are_required(raw, dotted):
+    with pytest.raises(ValidationError, match="Field required"):
+        validate_config(without(raw, dotted))

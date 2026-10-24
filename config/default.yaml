@@ -146,6 +146,50 @@ render:
     water: "#0072B2"
   debug_overlay: false
   forecast_ticks: 5            # hata ayıklama dalga tahmini ufku
+  characters:                  # VISUALS §9, ADR-012. Resimler yerel: assets/private/ git'e girmez
+    # height_px: ekranda boy (resmin tam yüksekliği × poz scale), > 0. anchor: ayak noktası, resme oranla
+    # (x, y) ∈ [0, 1]². faces: resmin baktığı yön, left | right. scale: poz çarpanı, > 0.
+    # fallback_*: dosyalardan biri bile yoksa çizilen soyut şekil (VISUALS §9.4); boyut px ≥ 1.
+    shrek:
+      height_px: 120
+      fallback_color: "#7DB04B"
+      fallback_size_px: [64, 64]
+      poses:
+        idle:  {file: assets/private/shrek_idle.png,  anchor: [0.52, 1.0], faces: right, scale: 1.0}
+        throw: {file: assets/private/shrek_throw.png, anchor: [0.40, 1.0], faces: right, scale: 1.0}
+        dam:   {file: assets/private/shrek_dam.png,   anchor: [0.48, 1.0], faces: right, scale: 0.9}
+    donkey:
+      height_px: 88
+      fallback_color: "#8E8E8E"
+      fallback_size_px: [44, 52]
+      poses:
+        idle:  {file: assets/private/donkey_idle.png,  anchor: [0.50, 1.0], faces: left, scale: 1.0}
+        happy: {file: assets/private/donkey_happy.png, anchor: [0.50, 1.0], faces: left, scale: 1.0}
+  animation:                   # VISUALS §9.2; gerçek zaman (s), ekran (px, derece). Oranlar [0, 1)
+    breath_period_s: 2.4       # IDLE nefes periyodu; > 0
+    breath_scale: 0.02         # IDLE dikey ölçek genliği; [0, 1)
+    scared_shake_px: 1.5       # SCARED (DİZ) titreme genliği; ≥ 0
+    scared_shake_hz: 12        # > 0
+    wade_period_s: 0.5         # WADE (yavaş hareket) adım periyodu; > 0
+    wade_bob_px: 3             # ≥ 0
+    dam_shake_px: 1.5          # DAM zorlanma titremesi; ≥ 0
+    dam_shake_hz: 9            # > 0
+    hop_height_px: 14          # HOP yay tepesi; ≥ 0. Uçuş süresi = time.tick_seconds (türetilir)
+    land_s: 0.12               # HOP inişte ezilme süresi; > 0
+    land_squash: 0.12          # inişte ezilme; [0, 1)
+    throw_s: 0.45              # THROW süresi; > 0
+    throw_windup_ratio: 0.4    # sürenin kurulma payı; (0, 1)
+    throw_squash: 0.15         # [0, 1)
+    slip_s: 0.6                # SLIP süresi; > 0
+    slip_tilt_deg: 18          # sendeleme açısı; ≥ 0
+    slip_wobble_hz: 4          # sallanma frekansı; > 0
+    happy_s: 0.8               # HAPPY / CHEER süresi; > 0
+    happy_bounce_px: 10        # ≥ 0
+    happy_bounces: 2           # zıplama sayısı; ≥ 1
+    respawn_s: 0.5             # RESPAWN belirme süresi; > 0
+    swept_s: 1.2               # SWEPT hayaleti süresi; > 0
+    swept_slide_px: 120        # akış yönünde (doğu, ekranda sağ) kayma; ≥ 0
+    swept_tilt_deg: 50         # akış yönüne devrilme; ≥ 0
 
 metrics:
   critical_horizon_ticks: 3    # H (METRICS.md §3)

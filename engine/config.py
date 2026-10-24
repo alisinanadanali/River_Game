@@ -49,6 +49,9 @@ PosInt = Annotated[int, Field(ge=1)]
 NonNegInt = Annotated[int, Field(ge=0)]
 Scancode = Annotated[int, Field(ge=0, lt=SDL_NUM_SCANCODES)]
 HexColor = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}$")]
+Fraction = Annotated[float, Field(ge=0, le=1)]          # a share of an image's width or height
+Squash = Annotated[float, Field(ge=0, lt=1)]            # scale 1 ± this stays > 0
+OpenRatio = Annotated[float, Field(gt=0, lt=1)]
 
 
 class StrictModel(BaseModel):
@@ -256,6 +259,76 @@ class PaletteConfig(StrictModel):
     water: HexColor
 
 
+class PoseImage(StrictModel):
+    """VISUALS §9.1: one pose image of a character, read from a local file (ADR-012)."""
+
+    file: str                                  # relative to the project root
+    anchor: tuple[Fraction, Fraction]          # the feet, as a share of the image (x, y)
+    faces: Literal["left", "right"]
+    scale: PosFloat                            # × the character's height_px
+
+
+class ShrekPoses(StrictModel):
+    idle: PoseImage
+    throw: PoseImage
+    dam: PoseImage
+
+
+class DonkeyPoses(StrictModel):
+    idle: PoseImage
+    happy: PoseImage
+
+
+class CharacterLook(StrictModel):
+    """VISUALS §9: on-screen height, and the abstract shape drawn when an image is missing (§9.4)."""
+
+    height_px: PosFloat
+    fallback_color: HexColor
+    fallback_size_px: tuple[PosInt, PosInt]
+
+
+class ShrekLook(CharacterLook):
+    poses: ShrekPoses
+
+
+class DonkeyLook(CharacterLook):
+    poses: DonkeyPoses
+
+
+class CharactersConfig(StrictModel):
+    shrek: ShrekLook
+    donkey: DonkeyLook
+
+
+class AnimationConfig(StrictModel):
+    """VISUALS §9.2: clip timings (wall-clock seconds) and amplitudes (px, degrees, ratios)."""
+
+    breath_period_s: PosFloat                  # IDLE
+    breath_scale: Squash
+    scared_shake_px: NonNegFloat               # SCARED
+    scared_shake_hz: PosFloat
+    wade_period_s: PosFloat                    # WADE
+    wade_bob_px: NonNegFloat
+    dam_shake_px: NonNegFloat                  # DAM
+    dam_shake_hz: PosFloat
+    hop_height_px: NonNegFloat                 # HOP; flight time is time.tick_seconds
+    land_s: PosFloat
+    land_squash: Squash
+    throw_s: PosFloat                          # THROW
+    throw_windup_ratio: OpenRatio
+    throw_squash: Squash
+    slip_s: PosFloat                           # SLIP_LEFT, SLIP_RIGHT
+    slip_tilt_deg: NonNegFloat
+    slip_wobble_hz: PosFloat
+    happy_s: PosFloat                          # HAPPY, CHEER
+    happy_bounce_px: NonNegFloat
+    happy_bounces: PosInt
+    respawn_s: PosFloat                        # RESPAWN
+    swept_s: PosFloat                          # SWEPT
+    swept_slide_px: NonNegFloat
+    swept_tilt_deg: NonNegFloat
+
+
 class RenderConfig(StrictModel):
     window_px: tuple[int, int]
     fps: int
@@ -265,6 +338,8 @@ class RenderConfig(StrictModel):
     palette: PaletteConfig
     debug_overlay: bool
     forecast_ticks: int
+    characters: CharactersConfig               # VISUALS §9
+    animation: AnimationConfig
 
 
 class MetricsConfig(StrictModel):
