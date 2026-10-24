@@ -5,6 +5,22 @@ Her faz, kabul kriterlerinin tümü sağlanınca kapanır. İş akışı her faz
 
 ## Faz 0 — Motor + testler
 
+**Durum: kapandı, `v0.1.0` (2026-10-24).** Kabul kanıtları, etiketteki koddan yeniden üretilebilir:
+
+| Kriter | Nasıl doğrulanır | Sonuç (v0.1.0) |
+|---|---|---|
+| Her kural kimliğinin testi | `tests/test_rule_coverage.py` (MODEL.md'den okur) | 37/37 |
+| INV-01 … INV-08, ≥ 200 seed × 300 tick | `HYPOTHESIS_PROFILE=full uv run pytest` | geçti |
+| INV-02 bayt düzeyinde | `tests/invariants/test_INV02_*` (alt süreç + `PYTHONHASHSEED` dahil) | geçti |
+| Ek A ile uyum | `uv run python -m tools.design_calcs` | 96/96 |
+| Taktik modda tam oyun | `tests/tools/test_tactical.py` (belgedeki komut, 300 tick) | geçti |
+| ≥ 5 000 tick/sn | `uv run python -m tools.bench`, `uv run pytest -m perf` | ≈ 7 600 (ADR-011) |
+| Ghosting tablosu | CONTROLS.md §6 | dolduruldu, varsayılan düzen |
+
+Sürüm tek yerde tutulur: `pyproject.toml` `version`; motor onu `engine.ENGINE_VERSION` olarak taşır (log
+başlığı, EVENTS.md) ve bir test ikisinin eşitliğini korur. Bu etiketten sonra olay kataloğundaki her değişiklik
+`EVENT_SCHEMA_VERSION`'ı artırır (EVENTS.md).
+
 **Kapsam**
 - `pyproject.toml` (uv, Python 3.12): numpy, pyyaml, pydantic v2, pytest, hypothesis.
 - `engine/config.py`: pydantic şeması, profil derin birleştirme, `config_hash`.

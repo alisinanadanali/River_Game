@@ -14,7 +14,9 @@ dataclass'tır; `type` sınıf adıdır, ayrı bir alan değildir. Olay sınıfl
 eklenir (adım 4'te yalnız `GameOver`). Bir olayın JSON satırı, ortak alanlarla olay alanlarının tek düz nesnede
 kanonik JSON'udur (aşağıda, log başlığı): `{"reason":"time","score":12,"seq":0,"t":299,"type":"GameOver"}`.
 Şema sürümü 1, ilk sürüm (v0.1.0) etiketlenene kadar sabit kalır; o zamana dek katalog bu belgeyle birlikte
-büyür.
+büyür. **v0.1.0 etiketlendi (2026-10-24):** şema 1 artık donmuştur; bundan sonra bir olay eklemek, silmek ya da
+bir alanını değiştirmek `EVENT_SCHEMA_VERSION`'ı artırır. Log başlığındaki `engine_version`
+`engine.ENGINE_VERSION`'dır (`pyproject.toml` ile aynı, testle korunur).
 
 ## Eylem ve rol olayları
 
