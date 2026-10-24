@@ -24,3 +24,6 @@ tensorboard/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local character images (personal use only, never committed)
+assets/private/
