@@ -24,8 +24,19 @@ Oyun, iki ajanlı, ortak ödüllü (tam işbirlikçi) stokastik bir oyundur: ⟨
   Rastgelelik yalnızca beş RNG akışından gelir (R-01).
 - **R (ödül):** olaylardan türetilir (ADR-009). Varsayılan takım ödülü `r_t = Σ ItemDelivered.points`.
   Şekillendirme şablonları METRICS.md §4'te.
-- **O (gözlem):** `observe(state, role)`. V0'da iki rol için de tam gözlem; arayüz V1'de kısmi gözleme
-  (Shrek yukarı akışı, eşek taş sertliğini ve dengesini görür) değişmeden genişler.
+- **O (gözlem):** `observe(state, role) -> Observation` (`engine/observe.py`, ENTITIES.md Observation). V0'da
+  iki rol aynı şeyi görür: durumun tamamı, **geleceği ele veren iki alan dışında**:
+  - `world.seed`: beş akış seed'den türer (R-01) ve eylemler akışlara dokunmaz (R-02). Seed'i bilen bir ajan
+    gelecekteki bütün dalgaları, yük varışlarını, atış inişlerini ve kaymaları önceden hesaplayabilirdi.
+  - `projectiles[].landing`: atış anında çekilen iniş noktası (S-04) mermi inene kadar gizlidir (VISUALS §5:
+    gölge hedef hücrede durur). İnişin sonucu adım 4'ün olaylarında görünür (`ItemCaught`, `ItemMissed`, …).
+
+  RNG akışları zaten durumun parçası değildir (ADR-011). Gizli olmayan her alan gözlemde aynen durur; bunu,
+  gözlemden ve gizli değerlerden durumu geri kuran test denetler. Gözlem kopya yapmaz: alt nesneler durumla
+  paylaşılır ve diziler salt okunurdur. Arayüz V1'de kısmi gözleme (Shrek yukarı akışı, eşek taş sertliğini ve
+  dengesini görür) değişmeden genişler: rol bazlı görünümler daha çok alanı gizler, imza aynı kalır.
+  Bilinen sınır: harita seed'in bir fonksiyonudur; 2³² seed üzerinde kaba kuvvet araması seed'i haritadan
+  bulabilir. Gözlem bunu doğrudan vermez; ajanların böyle bir arama yapmadığı varsayılır.
 - **γ:** RL tarafında seçilir; süre sınırlı (T = 300 tick) bölümler için γ = 1 de geçerlidir.
 
 Bölüm sonu: `t = game_length_ticks` (`TIME`) ya da `lives = 0` (`LIVES`). Skor = Σ teslim puanı; kalan can

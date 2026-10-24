@@ -25,6 +25,7 @@ eklenir, sonra kodda ve arayüzde kullanılır. Birim sütunu ADR-008'e uyar: y�
 | Baraj | `dam` | Shrek'in kanalize yeteneği | — |
 | Dünya | `world` | Seed'den üretilen değişmez harita | — |
 | Oyun durumu | `GameState` | Bir tick'teki tüm değişken durum | — |
+| Gözlem | `Observation` | Bir rolün bir tick'te gördüğü durum: `observe(state, role)`; seed ve iniş noktaları gizli | — |
 
 ## Eylemler
 

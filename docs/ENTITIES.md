@@ -178,6 +178,25 @@ Yükler silinmediği için yeni yükün kimliği `len(items)`'tır (I-01).
 RNG akışları durumun parçası değildir: `step` onları ayrı alır ve yeni değerlerini ayrı döndürür (ADR-011,
 `engine/rng.py` `Rngs`).
 
+## Observation (gözlem)
+
+Kodda `engine/observe.py`; `observe(state, role)` ile kurulur (MODEL §1 O). Bir controller'ın gördüğü her şey
+budur (`act(observation) -> action`, ADR-005). Alt nesneler durumla paylaşılır (kopya yok, diziler salt okunur);
+yalnız gizli alan taşıyan iki nesnenin ayrı bir görünüm tipi vardır.
+
+| Alan | Tip | Açıklama |
+|---|---|---|
+| `role` | Role | `donkey` / `shrek`; V0'da iki rol aynı alanları görür |
+| `config`, `t`, `score`, `game_over` | — | GameState ile aynı |
+| `world` | WorldView | World, `seed` hariç |
+| `water`, `dam`, `stones`, `donkey`, `shrek`, `items`, `bank` | — | GameState'teki nesnelerin kendisi |
+| `projectiles` | tuple[ProjectileView] | Projectile, `landing` hariç |
+
+Gizli alanlar (V0; testler bu listeyi buradan okur):
+
+- `world.seed`
+- `projectiles[].landing`
+
 ## Actions (eylemler)
 
 Kodda `engine/actions.py`; uzaylar MODEL.md §1'dedir. Enum sırası RL kodlamasıdır (indeks = eylem kimliği).
