@@ -35,7 +35,7 @@ class World:
     def __eq__(self, other):
         if not isinstance(other, World):
             return NotImplemented
-        return all(_same(getattr(self, f.name), getattr(other, f.name)) for f in dataclasses.fields(self))
+        return all(same_content(getattr(self, f.name), getattr(other, f.name)) for f in dataclasses.fields(self))
 
     __hash__ = None  # equal by content, and numpy arrays are not hashable
 
@@ -46,7 +46,8 @@ class World:
         )
 
 
-def _same(a, b) -> bool:
+def same_content(a, b) -> bool:
+    """Equality for a field that may be an array: same dtype and values, NaN equal to NaN in float arrays."""
     if isinstance(a, np.ndarray):
         return a.dtype == b.dtype and np.array_equal(a, b, equal_nan=a.dtype.kind == "f")
     return a == b
