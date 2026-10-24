@@ -72,5 +72,6 @@ skeleton (`engine/step.py` pipeline + INV-02), world generation (`engine/world.p
 water and dam physics (`engine/water.py`, W-01 … W-07), all S-, D-, I- rules (`engine/validation.py`,
 `shrek.py`, `donkey.py`, `stones.py`, `items.py`, `catching.py`; imports one-way: items ← donkey ← catching) and
 INV-01 … INV-08 under random play. State copies use `engine/evolve.py`. `engine/observe.py`: V0 observation =
-the whole state minus `world.seed` and projectile landings (shared, no copies). Next: step 10 tactical CLI,
-11 design_calcs, 12 performance, 14 v0.1.0.
+the whole state minus `world.seed` and projectile landings (shared, no copies). Text tactical mode:
+`tools/tactical.py` (pure core) + `tools/tactical_cli.py` (terminal), CONTROLS.md §5.1. Next: step 11
+design_calcs, 12 performance, 14 v0.1.0.
