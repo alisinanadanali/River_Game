@@ -111,7 +111,7 @@ Pencere yok; iki oyuncu aynı terminalde sırayla yazar. Çekirdek `tools/tactic
 | `..` | kıyı |
 | `#K` `mK` `oK` | kalıcı taş / yosunlu taş / geçici taş; ikinci harf eşeğin **o anki yüküyle** basarsa olacağı derinlik (VISUALS §3): `K` KURU, `B` BİLEK, `D` DİZ, `!` sürüklenir |
 | `Eş` | eşek |
-| `Sh` | Shrek (güney kıyısı) |
+| `Sh` | Shrek (güney kıyısı); eşekle aynı hücredeyse `Eş` görünür, Shrek'in sütunu panelde |
 | `**` | yüzen yük |
 | `[  ]` | Shrek'in nişan hücresi |
 | `(  )` | uçan bir yükün hedef hücresi (gölge; iniş noktası gizli) |
