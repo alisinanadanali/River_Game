@@ -76,5 +76,6 @@ water and dam physics (`engine/water.py`, W-01 … W-07), all S-, D-, I- rules (
 INV-01 … INV-08 under random play. State copies use `engine/evolve.py`. `engine/observe.py`: V0 observation =
 the whole state minus `world.seed` and projectile landings (shared, no copies). Text tactical mode:
 `tools/tactical.py` (pure core) + `tools/tactical_cli.py` (terminal), CONTROLS.md §5.1. `tools/design_calcs.py`
-re-checks all of MODEL Appendix A (96 checks, ≈ 2 min; `--quick` for a tenth). Next: step 12 performance,
-14 v0.1.0.
+re-checks all of MODEL Appendix A (96 checks, ≈ 2 min; `--quick` for a tenth). `tools/bench.py`: ≈ 130 µs/tick
+(≈ 7 600 ticks/s) with random actions, measurement and next optimisation candidates in ADR-011. Next: step 14
+v0.1.0.
