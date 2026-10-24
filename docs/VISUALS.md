@@ -261,6 +261,7 @@ uv run python -m tools.character_preview --bench         # çizim süresi, kared
 | A D | ayak noktası x ±0,01 |
 | Z X | poz ölçeği (`scale`) ±0,02 |
 | W S | su seviyesi ±2 cm (kırpmayı görmek için; derinlik = su − taş üstü) |
+| M | iki karakterin yönünü çevir (aynalanmış resmin ayak noktasını görmek için) |
 | F1 | ayak noktası artısı ve resim çerçevesi |
 | P | seçili karakterin config parçasını terminale bas |
 | Esc | çık |
@@ -268,4 +269,13 @@ uv run python -m tools.character_preview --bench         # çizim süresi, kared
 ### 9.6 Hız
 
 Bir karede iki karakter ve bir hayalet çizilir. Bütçe: kare başına 16,7 ms'nin (60 FPS) küçük bir parçası,
-≤ 1 ms. Ölçüm `--bench` ile; sonuç bu bölüme yazılır.
+≤ 1 ms. Ölçüm `uv run python -m tools.character_preview --bench`: 600 kare boyunca bütün klipler sırayla, eşek
+ve hayalet su çizgisinde kırpılarak, 5 tekrarın en iyisi.
+
+| Tarih | Görünüm | Kare başına | Bütçenin payı |
+|---|---|---|---|
+| 2026-10-25 | resimler (Shrek 120 px, Eşek 88 px) | ≈ 240 µs | %1,4 |
+| 2026-10-25 | soyut şekiller | ≈ 50 µs | %0,3 |
+
+Maliyetin çoğu her karede yeniden yapılan ölçek (`smoothscale`) ve dönmedir (`rotozoom`); bütçe aşılırsa ilk
+aday, dönüşümü nicemleyip (ör. 1° ve %1 adımlar) sonucu önbelleğe almaktır.
