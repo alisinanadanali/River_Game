@@ -4,11 +4,12 @@ Every import in engine/**/*.py is read with `ast` and its top-level module check
 Known limit: dynamic imports (importlib.import_module("pygame")) are invisible to a static test.
 """
 
-import ast
 import sys
 from pathlib import Path
 
 import pytest
+
+from tests.imports import imported_modules
 
 ROOT = Path(__file__).resolve().parents[2]
 ENGINE_DIR = ROOT / "engine"
@@ -24,16 +25,7 @@ def engine_import_violations(source: str, package: str) -> list[tuple[int, str]]
     `package` is the dotted package the file lives in ("engine" for engine/step.py), needed to resolve
     relative imports such as `from ..tools import x`.
     """
-    imported: list[tuple[int, str]] = []
-    for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.Import):
-            imported += [(node.lineno, alias.name) for alias in node.names]
-        elif isinstance(node, ast.ImportFrom):
-            base = package.split(".")[: len(package.split(".")) - (node.level - 1)] if node.level else []
-            if node.module:
-                imported.append((node.lineno, ".".join(base + [node.module])))
-            else:  # `from . import rng` / `from .. import logs`: each name is a module
-                imported += [(node.lineno, ".".join(base + [alias.name])) for alias in node.names]
+    imported = imported_modules(source, package)
     return sorted((line, module) for line, module in imported if module.split(".")[0] not in ALLOWED)
 
 
