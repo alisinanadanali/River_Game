@@ -76,4 +76,9 @@ pipeline (13 stages, TICK.md), rules in `world.py`, `water.py`, `validation.py`,
 `tactical_cli` (text tactical mode, CONTROLS.md §5.1), `design_calcs` (MODEL Appendix A, 96 checks), `bench`
 (≈ 7 600 ticks/s; ADR-011). The version lives in `pyproject.toml` and `engine.ENGINE_VERSION` (tested equal);
 event schema 1 is frozen and fingerprinted (`tests/engine/test_version.py`): an event change bumps
-`EVENT_SCHEMA_VERSION`. Next: Phase 1 (pygame-ce render, keyboard controller, `main.py`).
+`EVENT_SCHEMA_VERSION`. Phase 1 started with the characters (VISUALS §9, ADR-012): `render/characters/` —
+`pose.py` (pure clips), `animator.py` (pure clip state machine: loops from the state, one-shots from events),
+`sprites.py` (pygame: local images from `assets/private/`, never in git, or the fallback shape) — plus
+`render/interpolation.py`, `render/strings_tr.py` (all UI strings) and `tools/character_preview.py` (`--bench`
+≈ 240 µs/frame). `tests/render/test_render_imports.py` guards render/'s imports (ADR-005 update). Next: the
+Phase 1 micro-steps (ROADMAP).
