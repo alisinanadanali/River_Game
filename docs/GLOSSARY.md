@@ -98,3 +98,16 @@ eklenir, sonra kodda ve arayüzde kullanılır. Birim sütunu ADR-008'e uyar: y�
 | RNG akışı | `rng stream` | `rng_world`, `rng_water`, `rng_items`, `rng_throw`, `rng_slip` |
 | Kural kimliği | `rule id` | MODEL.md'deki M-, W-, D-, S-, I-, R- önekli kimlik |
 | Zorluk profili | `profile` | `warmup`, `percolation_edge`, `hard` |
+
+## Görsel ve animasyon (VISUALS §9)
+
+| Türkçe | İngilizce | Tanım | Birim |
+|---|---|---|---|
+| Kukla animasyonu | `puppet animation` | Kesik bir resme her karede kodla dönüşüm uygulayarak hareket verme | — |
+| Poz | `pose` | Bir karakterin tek resmi: `idle`, `throw`, `dam`, `happy` | — |
+| Klip | `Clip` | Bir pozun zamana bağlı dönüşümü (`IDLE`, `HOP`, `THROW`, …); döngü ya da tek seferlik | s |
+| Dönüşüm | `Transform` | Kayma, ölçek, dönme, saydamlık; `pose(klip, t, config)`'in sonucu | px, oran, derece |
+| Ayak noktası | `anchor` | Resmin taşa oturan noktası, resim boyutuna oranla (x, y) | oran |
+| Hayalet | `ghost` | Sürüklenen eşeğin eski hücresinde kayıp solan görüntüsü | — |
+| Soyut şekil | `fallback shape` | Resim yokken çizilen şekil (VISUALS §9.4) | px |
+| Animasyon yöneticisi | `Animator` | Olaylardan ve durumdan karakter başına klip seçen durum makinesi | — |

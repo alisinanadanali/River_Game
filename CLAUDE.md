@@ -9,8 +9,8 @@ A*, MCTS, Q-learning, PPO, MAPPO, behaviour cloning, SA/GA balancing). The same 
 
 ## Units
 Height **cm**, mass **kg**, time **tick**. Config keys carry the unit as a suffix (`_cm`, `_kg`, `_ticks`,
-`_per_tick`, `_cells`). Rows: −1 = south bank (Shrek), 0…R−1 river, R = north bank (delivery). Columns
-0…C−1, water flows west → east.
+`_per_tick`, `_cells`; render keys, on the wall clock and the screen: `_s`, `_px`, `_deg`, `_hz`). Rows: −1 = south
+bank (Shrek), 0…R−1 river, R = north bank (delivery). Columns 0…C−1, water flows west → east.
 
 ## Workflow
 1. **Document** – the rule lives in `docs/MODEL.md` with a rule ID (`M-`, `W-`, `D-`, `S-`, `I-`, `R-`), its
@@ -31,9 +31,9 @@ Changing the tick order or any ADR decision requires a new/updated ADR in `docs/
 | `docs/EVENTS.md` | Event catalogue, fields, emitting step, consumers; log header |
 | `docs/CONTROLS.md` | Scancode keymaps, input buffer, tactical mode, ghosting test |
 | `docs/METRICS.md` | Team score, Harmony report (Uyum raporu), critical moments, RL reward templates |
-| `docs/VISUALS.md` | Oblique projection, colour-blind-safe safety-margin scale, layout, HUD, debug overlay |
+| `docs/VISUALS.md` | Oblique projection, colour-blind-safe safety-margin scale, layout, HUD, debug overlay, characters (§9) |
 | `docs/ROADMAP.md` | Phases 0–5 with acceptance criteria; target directory layout |
-| `docs/adr/` | ADR-001…ADR-011 |
+| `docs/adr/` | ADR-001…ADR-012 |
 | `config/default.yaml` | Every model parameter, with unit and valid range |
 | `config/profiles/` | `warmup`, `percolation_edge` (default), `hard`: diffs only, deep-merged |
 

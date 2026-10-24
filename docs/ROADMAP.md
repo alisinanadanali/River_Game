@@ -48,7 +48,8 @@ başlığı, EVENTS.md) ve bir test ikisinin eşitliğini korur. Bu etiketten so
 
 **Kapsam**
 - `render/` (pygame-ce): VISUALS.md Kademe 1 (3/4 eğik, renk + desen skalası, HUD, belirsizlik halkası, dalga
-  göstergesi, F1 hata ayıklama katmanı).
+  göstergesi, F1 hata ayıklama katmanı). Karakterler (VISUALS §9, `render/characters/`) Faz 1'in başında,
+  önizleme aracıyla (`tools/character_preview.py`) birlikte yapıldı.
 - `controllers/keyboard.py`: scancode eşlemesi, girdi tamponu, basılı tutma, taktik onay.
 - `main.py`: gerçek zamanlı döngü (60 FPS, tick interpolasyonu), F2 taktik mod, F5 yeniden başlat, oyun sonu ekranı (skor).
 
@@ -104,7 +105,10 @@ tablolu Q-learning (mini harita), stable-baselines3 ile PPO eşek, MAPPO.
 
 ## Kapsam dışı (şimdilik)
 
-Ağ / iki cihaz, karakter sprite'ları, gamepad (mimari hazır), menü sistemi süslemeleri.
+Ağ / iki cihaz, gamepad (mimari hazır), menü sistemi süslemeleri, karakter resimlerinin dağıtımı.
+
+Karakterler kapsamdadır ama **yereldir**: Shrek ve Eşek, git'e girmeyen `assets/private/` resimleriyle çizilir
+(VISUALS §9, ADR-012); resim yoksa VISUALS §9.4'teki soyut şekle düşülür. Depo ve sürümler resim içermez.
 
 ## Dizin yapısı (hedef)
 
@@ -116,11 +120,12 @@ River_Game/
 ├── config/                 # default.yaml + profiles/
 ├── engine/                 # saf Python + numpy (ADR-005)
 ├── controllers/            # keyboard, bots/, rl policy — act(observation) -> action
-├── render/                 # pygame-ce
+├── render/                 # pygame-ce; characters/ (VISUALS §9)
 ├── logs/                   # replay + olay JSONL + metrikler
 ├── envs/                   # Gymnasium + PettingZoo
-├── tools/                  # tactical_cli, design_calcs, ghosting_test
+├── tools/                  # tactical_cli, design_calcs, ghosting_test, bench, character_preview
 ├── assets/fonts/           # Noto Sans (OFL)
+├── assets/private/         # yerel karakter resimleri; .gitignore, git'e asla girmez (ADR-012)
 └── tests/
     ├── rules/              # test_<KURAL>_*.py
     └── invariants/         # hypothesis

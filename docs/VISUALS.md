@@ -8,7 +8,7 @@ okur, motora hiçbir şey yazmaz (ADR-005). Teknoloji: pygame-ce, 60 FPS, tick'l
 
 | Kademe | Faz | Kapsam |
 |---|---|---|
-| **1 — İşlevsel görünüm** | Faz 1 (ilk oyun testinden önce) | Bu belgedeki her şey; soyut şekiller, düz renkler, desenler, Türkçe metin |
+| **1 — İşlevsel görünüm** | Faz 1 (ilk oyun testinden önce) | §2–§7 ve §9; düz renkler, desenler, Türkçe metin; karakterler yerel resimlerle ya da soyut şekille (§9) |
 | **2 — Görsel cila** | Faz 1.5 (ilk oyun testinden sonra) | §8 |
 
 ## 2. Perspektif: 3/4 eğik (oblique)
@@ -124,8 +124,147 @@ Her rolün paneli klavyede o rolün elinin olduğu tarafta durur: Eşek solda, S
 - Yük ikonları (elma kasası, patates çuvalı, karpuz).
 - "Juice": su sıçrama parçacıkları, sürüklenmede kısa ekran sarsıntısı, yakalamada küçük ölçek animasyonu.
 - Ses: CC0 kütüphaneleri ve sfxr türü üreteçler (atış, yakalama, sıçrama, dalga uğultusu, baraj gıcırtısı).
-- Karakter sprite'ları kapsam dışıdır; Shrek ve Eşek soyut şekil kalır (Shrek: yeşil yuvarlak kare,
-  Eşek: gri üçgen kulaklı daire).
+- Karakterler bu kademenin işi değildir: §9'da, Kademe 1'de çizilirler. Cila karakterlere yalnız "juice"
+  ekler (ör. sıçrama parçacıkları); kukla dönüşümleri §9'dadır.
 
 Render katmanı değiştirilebilir (Python `arcade` + shader, web ya da Godot ön yüzü): olay tabanlı mimari
 sayesinde motor etkilenmez.
+
+## 9. Karakterler: yerel resimler ve kukla animasyonu (ADR-012)
+
+Shrek ve Eşek, oyuncunun kendi bilgisayarındaki orijinal görüntülerle çizilir. Resimler `assets/private/`
+altındadır, git'e **asla** girmez (`.gitignore`; kaynaklar `assets/private/SOURCES.txt`) ve oyun yalnız yerelde
+oynanır. Resim yoksa (ör. depoyu yeni klonlayan biri) karakter **soyut şekle** düşer (§9.4). İki durumda da oyun
+aynı bilgiyi gösterir: karakter görseli bilgi taşımaz, bilgi renk skalasında, desenlerde ve HUD'dadır.
+
+Kod `render/characters/`'dadır: `pose.py` ve `animator.py` saftır (pygame import etmez, pencere açmadan test
+edilir), `sprites.py` resimleri yükler ve çizer (pygame). Konum interpolasyonu `render/interpolation.py`'dadır.
+
+### 9.1 Yöntem: kesik görüntü + kukla dönüşümleri
+
+Her pozun tek bir resmi vardır. Hareket, resme her karede uygulanan bir **dönüşümle** (`Transform`) verilir:
+
+| Alan | Birim | Anlamı |
+|---|---|---|
+| `image` | — | Hangi poz resmi: Shrek `idle`, `throw`, `dam`; Eşek `idle`, `happy` |
+| `dx_px`, `dy_px` | px | Ayak noktasının kayması; ekran ekseni, `dy < 0` yukarı |
+| `scale_x`, `scale_y` | oran | Ezilip uzama. Kliplerde alan korunur: `scale_x · scale_y = 1` |
+| `angle_deg` | derece | Ayak noktası çevresinde dönme; pozitif saat yönünün tersi (pygame) |
+| `alpha` | [0, 1] | Saydamlık; 1 tam görünür |
+
+Bunlara karakter düzeyinde iki şey eklenir:
+
+- **Yön (aynalama):** her resmin baktığı yön config'dedir (`faces: left | right`). Karakter son yatay
+  hareketinin yönüne bakar (eşek için `to_cell − from_cell` sütun farkı, Shrek için `to_col − from_col`);
+  bakış ile resmin yönü farklıysa resim yatayda aynalanır. Dikey hareket yönü değiştirmez. Oyun başında iki
+  karakter de doğuya, akış yönüne bakar.
+- **Su çizgisinde kırpma:** eşek nehirde bir taşta dururken su çizgisi ayaklarının `max(0, d) · px_per_cm` px
+  üstündedir (§2'deki eğik izdüşümle aynı ölçek, `d` = `donkey.depth`). Bu çizginin altı çizilmez; BİLEK ve DİZ
+  derinliği karakterin üstünde de görünür. Kırpma çizgisi zıplamayla (`dy`) birlikte kalkmaz: su yerinde kalır.
+
+**Ayak noktası (`anchor`)** resmin genişlik ve yüksekliğine oranla `(x, y) ∈ [0, 1]²`'dir. Karakter bu noktayla
+taşın üst yüzüne (`z = e`) ya da kıyıya oturur; dönme bu nokta çevresindedir. **Ölçek:** resim ekranda
+`height_px · scale` px yüksekliğinde çizilir (`height_px` karakter başına, `scale` poz başına çarpan).
+
+**Gerçek zaman ve interpolasyon.** Dönüşümler duvar saatiyle (saniye, 60 FPS) hesaplanır, motorun tick'iyle
+değil; motor değişmez (ADR-005). Karakterin konumu tick'ler arasında önceki ve yeni hücre arasında doğrusal
+interpolasyonla ilerler: `u = (şimdi − tick_başı) / tick_seconds`, `[0, 1]`'e kırpılır; konum
+`önceki + u · (yeni − önceki)`. Klipler konumu taşımaz, yalnız bu konumun üstüne dönüşüm eklerler: aynı tick'te
+hareket, kayma ve yakalama olduğunda hangi klip oynarsa oynasın karakter doğru yere gider.
+
+### 9.2 Klipler
+
+Klip, bir pozun zamana bağlı dönüşümüdür: `pose(klip, geçen_süre_s, config) -> Transform`. **Döngü klipleri**
+sonsuz sürer; **tek seferlik klipler** süreleri dolunca biter ve karakter döngü klibine döner. `t` klibin
+başından geçen süre (s), `u = t / süre` (`[0, 1]`'e kırpılır). Parametreler `render.animation`'dadır.
+
+| Klip | Rol | Resim | Tür | Dönüşüm | Süre |
+|---|---|---|---|---|---|
+| `IDLE` | ikisi | idle | döngü | nefes: `scale_y = 1 + a·sin(2πt/T)`, `scale_x = 1/scale_y` | — |
+| `SCARED` | Eşek | idle | döngü | `IDLE` nefesi + titreme `dx = A·sin(2πft)` | — |
+| `WADE` | Eşek | idle | döngü | suda yavaş adım: `dy = −A·\|sin(πt/T)\|` | — |
+| `DAM` | Shrek | dam | döngü | zorlanma titremesi `dx = A·sin(2πft)` | — |
+| `HOP` | ikisi | idle | tek | uçuş (`t < tick_seconds`, `v = t / tick_seconds`): `dy = −4h·v(1−v)`; iniş (sonraki `land_s`, `w` iniş payı): `scale_y = 1 − q·sin(πw)` | `tick_seconds + land_s` |
+| `THROW` | Shrek | throw | tek | kurulma (ilk `r` payı, `w = u/r`): `scale_y = 1 − q·sin(πw/2)`; bırakma (`w = (u−r)/(1−r)`): `scale_y = 1 − q·cos(πw)·(1−w)` (ezik → uzamış → 1) | `throw_s` |
+| `SLIP_LEFT`, `SLIP_RIGHT` | Eşek | idle | tek | sendeleme: `angle = ±φ·(1−u)·cos(2πft)`; sola kayışta `+` (saat yönünün tersi) | `slip_s` |
+| `HAPPY` | Eşek | happy | tek | zıplama: `dy = −b·\|sin(nπu)\|` | `happy_s` |
+| `CHEER` | Shrek | idle | tek | `HAPPY`'nin hareketi | `happy_s` |
+| `RESPAWN` | Eşek | idle | tek | belirme: `alpha = u` | `respawn_s` |
+| `SWEPT` | Eşek (hayalet) | idle | tek | akışla kayıp solma: `dx = L·u`, `angle = −ψ·u` (akış yönüne devrilir), `alpha = 1 − u` | `swept_s` |
+
+Bütün kliplerde `alpha ∈ [0, 1]`, ölçekler pozitif, değerler sonlu. Tek seferlik bir klip bittiğinde (`u = 1`)
+dönüşüm kayma, dönme ve ezilme bakımından nötrdür; yalnız `SWEPT` kaymış ve görünmez biter.
+
+### 9.3 Olay → animasyon
+
+**Döngü klibi durumdan seçilir** (her tick'te `observe` gözleminden; ilk tutan satır):
+
+| Koşul | Eşek | Shrek |
+|---|---|---|
+| Eşek yavaş harekette (`move_remaining > 0`, D-05) | `WADE` | |
+| Eşek DİZ'de (`depth_state = KNEE`, D-04) | `SCARED` | |
+| Aksi | `IDLE` | |
+| Baraj tutuluyor (`dam.active`, S-08) | | `DAM` |
+| Aksi | | `IDLE` |
+
+Döngü durumdan okunur, olaylardan değil: sürüklenen eşek kıyıda yeni bir durumla doğar ve bunun için
+`DonkeyDepthChanged` yayılmaz (D-07); durum ise her zaman doğrudur. Döngü klibinin zamanı, döngü klibinin
+değiştiği andan sayılır.
+
+**Tek seferlik klip olaylardan seçilir** (EVENTS.md). Bir tick'in olaylarından her karakter için en yüksek
+öncelikli klip alınır:
+
+| Olay | Eşek | Shrek | Öncelik | Yön |
+|---|---|---|---|---|
+| `DonkeyRespawned` | `RESPAWN` | | 4 | |
+| `DonkeySlipped(side)` | `SLIP_<side>` | | 3 | |
+| `ItemThrown`, `TempStoneSpawned`, `TempStoneRaised` | | `THROW` | 3 | |
+| `DonkeyMoved` | `HOP` | | 2 | `to_cell − from_cell` |
+| `DonkeyMoveStarted` | (döngü `WADE` olur) | | — | `to_cell − from_cell` |
+| `ShrekMoved` | | `HOP` | 2 | `to_col − from_col` |
+| `ItemCaught`, `ItemDelivered` | `HAPPY` | `CHEER` | 1 | |
+| `DonkeySwept(row, col)` | hayalet `SWEPT` | | ayrı katman | |
+
+- **Kesme:** yeni tick'in klibi oynayan klibi, önceliği **eşit ya da yüksekse** keser; düşükse yok sayılır.
+  Kuyruk yoktur, böylece ekran oyunun gerisinde kalmaz. Oynayan klip bitmişse her yeni klip başlar.
+- **Hayalet:** sürüklenmede motor eşeği aynı tick'te güney kıyısında yeniden doğurur (D-07). Ekranda ikisi birlikte
+  oynar: sürüklendiği hücrede (`DonkeySwept` `row`, `col`) bir hayalet `SWEPT` ile akış yönünde kayıp solar,
+  gerçek eşek kıyıda `RESPAWN` ile belirir. Hayaleti hiçbir olay kesmez; yeni bir sürüklenme yenisini başlatır.
+  Son can kaybında `DonkeyRespawned` yoktur; yalnız hayalet oynar.
+
+### 9.4 Resim yoksa: soyut şekil
+
+Bir karakterin poz dosyalarından **biri bile** okunamazsa o karakterin bütün pozları soyut şekle düşer (yarı
+resim yarı şekil karışımı olmaz); eksik dosyalar listelenir (önizleme aracı, Faz 1'de oyun açılışı). Soyut şekil
+`fallback_size_px` boyutunda, ayak noktası alt ortada, doğuya bakan bir yüzeydir; aynı dönüşümler ona da
+uygulanır. Shrek: `fallback_color` renginde yuvarlak köşeli kare. Eşek: `fallback_color` renginde daire ve iki
+üçgen kulak. Biçim oranları `render/characters/sprites.py`'de adlandırılmış sabitlerdir.
+
+### 9.5 Önizleme aracı
+
+```
+uv run python -m tools.character_preview                 # pencere
+uv run python -m tools.character_preview --bench         # çizim süresi, karede µs
+```
+
+İki karakteri birer taşın üstünde, bir su bandıyla yan yana gösterir ve bütün klipleri sırayla oynatır.
+Ölçek ve ayak noktasını ayarlamak içindir; değerleri terminale `default.yaml`'a yapıştırılacak biçimde basar.
+Çekirdek `tools/character_preview.py`'nin saf kısmıdır (tuş → ayar, YAML parçası); pencere aynı dosyadadır.
+
+| Tuş | İş |
+|---|---|
+| Tab | seçili karakter (Shrek / Eşek) |
+| ← → | önceki / sonraki klip (otomatik oynatma durur); Boşluk otomatiğe döner |
+| PgUp PgDn | seçili poz (`idle`, `throw`, …): ayak noktası ve ölçek bu poza uygulanır |
+| + − | `height_px` ±2 |
+| A D | ayak noktası x ±0,01 |
+| Z X | poz ölçeği (`scale`) ±0,02 |
+| W S | su seviyesi ±2 cm (kırpmayı görmek için; derinlik = su − taş üstü) |
+| F1 | ayak noktası artısı ve resim çerçevesi |
+| P | seçili karakterin config parçasını terminale bas |
+| Esc | çık |
+
+### 9.6 Hız
+
+Bir karede iki karakter ve bir hayalet çizilir. Bütçe: kare başına 16,7 ms'nin (60 FPS) küçük bir parçası,
+≤ 1 ms. Ölçüm `--bench` ile; sonuç bu bölüme yazılır.
