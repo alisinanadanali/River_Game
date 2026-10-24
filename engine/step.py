@@ -57,7 +57,7 @@ def _validate_actions(tick: Tick) -> Tick:
 def _shrek_actions(tick: Tick) -> Tick:
     """TICK.md step 2: Shrek's actions. Rules: S-01, S-02, S-04, S-06, S-07, S-08, W-05.
 
-    engine/shrek.py: (b) walk and (c) aim so far.
+    engine/shrek.py: (a) hold or release the dam, (b) walk, (c) aim, (d) throw, hand off or drop a rock.
     """
     return shrek_stage(tick)
 
@@ -65,7 +65,7 @@ def _shrek_actions(tick: Tick) -> Tick:
 def _donkey_action(tick: Tick) -> Tick:
     """TICK.md step 3: the donkey's action. Rules: D-02, D-03, D-05, D-08.
 
-    engine/donkey.py: moves (D-05) and stances (D-08).
+    engine/donkey.py: slow moves go on (D-05); a new move may slip first (D-02, D-03); stances (D-08).
     """
     return donkey_stage(tick)
 

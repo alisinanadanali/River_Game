@@ -19,5 +19,6 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]                                   # import engine/, tools/ from the project root
-addopts = ["--strict-markers", "--strict-config"]
+addopts = ["--strict-markers", "--strict-config", "-m", "not perf"]  # `uv run pytest -m perf` overrides the -m
+markers = ["perf: real timing (tools/bench); machine-dependent, so left out of the default run"]
 xfail_strict = true
