@@ -372,7 +372,17 @@ Yapısal sabitler (config'te değil, `engine/config.py` modül sabiti): `CONFIG_
 
 Yöntem: numpy ile bellek içi simülasyon. Perkolasyon için 20 000 harita; su için 120 000 tick'lik tek yörünge
 ve rastgele (taş, tick) örnekleri; eşek yüklü (200 + 60 kg). Sonuçlar ilk oyun testinde yeniden doğrulanacak.
-Faz 0'da bu hesaplar `tools/design_calcs.py` olarak motorun kendisiyle tekrarlanır.
+
+**Motorla yeniden hesap (Faz 0):** `uv run python -m tools.design_calcs` bu ekteki her sayıyı motorun kendi
+fonksiyonlarıyla (harita üretimi, `step`, `throw_sigma`, `balance`, `slip_probability`, `sink_and_decay`, …)
+yeniden üretir ve yan yana basar; uyumsuz bir sayı varsa 1 koduyla çıkar (`--quick`: örneklemlerin onda biri).
+Tolerans: config değerleri ve formüller için basılı yuvarlama (son basamağın yarısı); Monte Carlo değerleri için
+4 birleşik standart hata (motorun örneklemi + bu ekin örneklemi) artı yuvarlama. Su seviyesi güçlü öz ilişkili
+olduğu için standart hata 40 blokluk blok ortalamalarından gelir. Basılı bir olasılık, yuvarlama aralığındaki
+herhangi bir değer olabilir; varyans o aralığın 0,5'e yakın ucunda alınır (basılı 0,00 kesin sıfır değildir).
+`tests/tools/test_design_calcs.py` her sayının bu belgede basıldığı satırı denetler. Yeniden hesaplanmayanlar
+(bir eşek politikası gerektirir, Faz 3): dalgaları yok sayan eşeğin can kaybı (A.2), tur süresi ve tur başına
+yük (A.5).
 
 ### A.1 Perkolasyon (9×9, güney → kuzey, 4-komşu)
 
@@ -385,6 +395,10 @@ Faz 0'da bu hesaplar `tools/design_calcs.py` olarak motorun kendisiyle tekrarlan
 | 0,62 | 0,641 | 0,64 / 0,32 / 0,04 / 0,00 / 0,00 | 11,8 |
 | 0,70 | 0,894 | 0,90 / 0,10 / 0,00 / 0,00 / 0,00 | 11,1 |
 
+Ort. en kısa yol: kayasız yolu olan haritalarda, yalnız taşlardan geçen en kısa geçişin hamle sayısı (güney
+kıyısından kuzey kıyısına; R = 9'da en az 10). P(kayasız yol) ile "min. kaya = 0" aynı olaydır; p = 0,50 satırındaki
+0,193 ve 0,18 iki ayrı simülasyonun yuvarlamasıdır, motor ≈ 0,19 verir ve ikisi de tolerans içindedir.
+
 Sonuç: p_c ≈ 0,593 sonsuz ızgara değeridir; 9×9'da geçiş yumuşaktır. p = 0,50 "imkânsız" değildir (%19 yol
 var). Profiller bu yüzden kaya sayısıyla tanımlanır (M-04).
 
@@ -392,7 +406,7 @@ var). Profiller bu yüzden kaya sayısıyla tanımlanır (M-04).
 
 | Set | Boş taş su altında | Normal taş, yüklü: KURU / BİLEK / DİZ / SÜRÜKLENME | Yosunlu: SÜRÜKLENME |
 |---|---|---|---|
-| Prompt (σ=1,5, λ=0,02, h∈[5,25]) | %5 | 0,86 / 0,11 / 0,02 / 0,009 | 0,015 |
+| Prompt (σ=1,5, λ=0,02, h∈[5,25]; gerisi seçilen set) | %5 | 0,86 / 0,11 / 0,02 / 0,009 | 0,015 |
 | **Seçilen (σ=2,5, λ=0,03, h∈[0,20])** | **%21** | **0,61 / 0,24 / 0,115 / 0,032** | **0,058** |
 
 Seçilen setle oyun başına ≈ 9 dalga gelir; P(A > 20 cm) ≈ 0,19. Dalgaları yok sayan bir eşek oyun başına
