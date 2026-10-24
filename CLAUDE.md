@@ -69,13 +69,11 @@ uv run python main.py                 # Phase 1: pygame-ce game
 ```
 
 ## Current phase
-Phase 0 in progress (see `docs/ROADMAP.md`). Done: toolchain, ghosting test, INV-07, config, RNG, walking
-skeleton (`engine/step.py` pipeline + INV-02), world generation (`engine/world.py`, M-01 … M-05),
-water and dam physics (`engine/water.py`, W-01 … W-07), all S-, D-, I- rules (`engine/validation.py`,
-`shrek.py`, `donkey.py`, `stones.py`, `items.py`, `catching.py`; imports one-way: items ← donkey ← catching) and
-INV-01 … INV-08 under random play. State copies use `engine/evolve.py`. `engine/observe.py`: V0 observation =
-the whole state minus `world.seed` and projectile landings (shared, no copies). Text tactical mode:
-`tools/tactical.py` (pure core) + `tools/tactical_cli.py` (terminal), CONTROLS.md §5.1. `tools/design_calcs.py`
-re-checks all of MODEL Appendix A (96 checks, ≈ 2 min; `--quick` for a tenth). `tools/bench.py`: ≈ 130 µs/tick
-(≈ 7 600 ticks/s) with random actions, measurement and next optimisation candidates in ADR-011. Next: step 14
-v0.1.0.
+Phase 0 closed: `v0.1.0` (2026-10-24; acceptance table in `docs/ROADMAP.md`). The engine: `engine/step.py`
+pipeline (13 stages, TICK.md), rules in `world.py`, `water.py`, `validation.py`, `shrek.py`, `donkey.py`,
+`stones.py`, `items.py`, `catching.py` (imports one-way: items ← donkey ← catching), state copies with
+`evolve.py`, controllers see `observe.py` (whole state minus `world.seed` and projectile landings). Tools:
+`tactical_cli` (text tactical mode, CONTROLS.md §5.1), `design_calcs` (MODEL Appendix A, 96 checks), `bench`
+(≈ 7 600 ticks/s; ADR-011). The version lives in `pyproject.toml` and `engine.ENGINE_VERSION` (tested equal);
+event schema 1 is frozen and fingerprinted (`tests/engine/test_version.py`): an event change bumps
+`EVENT_SCHEMA_VERSION`. Next: Phase 1 (pygame-ce render, keyboard controller, `main.py`).
