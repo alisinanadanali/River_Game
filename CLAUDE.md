@@ -73,5 +73,6 @@ water and dam physics (`engine/water.py`, W-01 … W-07), all S-, D-, I- rules (
 `shrek.py`, `donkey.py`, `stones.py`, `items.py`, `catching.py`; imports one-way: items ← donkey ← catching) and
 INV-01 … INV-08 under random play. State copies use `engine/evolve.py`. `engine/observe.py`: V0 observation =
 the whole state minus `world.seed` and projectile landings (shared, no copies). Text tactical mode:
-`tools/tactical.py` (pure core) + `tools/tactical_cli.py` (terminal), CONTROLS.md §5.1. Next: step 11
-design_calcs, 12 performance, 14 v0.1.0.
+`tools/tactical.py` (pure core) + `tools/tactical_cli.py` (terminal), CONTROLS.md §5.1. `tools/design_calcs.py`
+re-checks all of MODEL Appendix A (96 checks, ≈ 2 min; `--quick` for a tenth). Next: step 12 performance,
+14 v0.1.0.
