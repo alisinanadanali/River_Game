@@ -70,6 +70,57 @@ Hangi düzenin kullanılacağı `controls.shrek_keymap: default | alt` ile seçi
 - Taktik mod yalnızca zamanlamayı değiştirir; kurallar ve gösterilen bilgi aynıdır. Replay'e
   `tactical_mode` bayrağı yazılır ama sonucu etkilemez.
 
+### 5.1 Metin taktik modu (Faz 0, `tools/tactical_cli.py`)
+
+```
+uv run python -m tools.tactical_cli --seed 42 --profile percolation_edge
+```
+
+Pencere yok; iki oyuncu aynı terminalde sırayla yazar. Çekirdek `tools/tactical.py`'dedir (saf, test edilir),
+`tools/tactical_cli.py` yalnız terminali bağlar.
+
+- **Her tick:** harita ve paneller basılır, önce eşek sonra Shrek **bir satır** yazar, Enter onaylar ve `step`
+  çalışır. Ekrandaki her şey `observe(state, role)`'dan gelir (MODEL §1 O): seed ve iniş noktası görünmez.
+  V0'da iki rolün gözlemi aynı olduğu için tek ekran basılır.
+- **Tuşlar config'den türer.** Harfler `controls.keymaps` scancode'larından okunur (USB HID: scancode 4 … 29 =
+  a … z, 44 = boşluk); kod sabit tuş içermez. Eşek `keymaps.donkey`'yi kullanır. Shrek her zaman
+  `keymaps.shrek_alt`'ı kullanır, çünkü ok tuşları, Ctrl ve Shift bir satıra yazılamaz.
+
+| Rol | Satır | Anlamı |
+|---|---|---|
+| Eşek | `w` `a` `s` `d` | `MOVE_N` / `MOVE_W` / `MOVE_S` / `MOVE_E` |
+| | `q` `e` | `STANCE_LEFT` / `STANCE_RIGHT` |
+| | `x` ya da boş satır | `NOOP` |
+| Shrek | `j` `l` | `move = W / E` |
+| | `i` `k` | `aim = UP / DOWN` |
+| | `u` `o` boşluk | `ability = THROW / ROCK / DAM` |
+| | `m` ya da boş satır | hepsi `NONE` |
+
+- **Shrek'in satırı bileşenleri birleştirir:** bileşen başına en çok bir tuş, sıra önemsiz. Örnek: `li` doğuya
+  yürü ve nişanı bir artır; `iu` nişanı artır ve fırlat; tek boşluk barajı tutar (§5'teki gibi her tick yeniden
+  seçilir). Aynı bileşene iki tuş (`jl`, `uo`) ya da tanımsız bir harf hatadır: satır yeniden sorulur, tick
+  ilerlemez.
+- Büyük-küçük harf fark etmez. Türkçe Q klavyede I tuşu `ı` yazar; `ı`, `I` ve `İ` de `i` sayılır.
+- **Komutlar** (her iki satırda): `?` yardım, `:q` çık (Ctrl+Z / Ctrl+D da çıkar). Eşek satırında `:N` (ör. `:5`)
+  iki oyuncu için N tick bekler; bu, N kez iki boş satır yazmakla aynıdır, arada harita basılmaz, yalnız olaylar.
+- **Harita:** kuzey (teslimat) üstte, güney kıyısı altta; su soldan sağa akar. Hücre dört karakterdir:
+
+| Gösterim | Anlamı |
+|---|---|
+| `~~` | su |
+| `..` | kıyı |
+| `#K` `mK` `oK` | kalıcı taş / yosunlu taş / geçici taş; ikinci harf eşeğin **o anki yüküyle** basarsa olacağı derinlik (VISUALS §3): `K` KURU, `B` BİLEK, `D` DİZ, `!` sürüklenir |
+| `Eş` | eşek |
+| `Sh` | Shrek (güney kıyısı) |
+| `**` | yüzen yük |
+| `[  ]` | Shrek'in nişan hücresi |
+| `(  )` | uçan bir yükün hedef hücresi (gölge; iniş noktası gizli) |
+
+  Haritanın altındaki satır sütun başına su seviyesi L(c)'dir (cm, W-07). Panellerde süre, skor, can, eşeğin
+  derinliği, duruşu, heybeleri ve dengesi, Shrek'in nişanı, cooldown'ları, kıyı kuyruğu, baraj, dalgalar, uçan
+  ve yüzen yükler ve son tick'in olayları (EVENTS.md adlarıyla) yazar.
+- Oyun `game_over` olunca son durum ve skor basılır, program 0 ile çıkar.
+
 ## 6. Ghosting testi (ROADMAP Faz 0 sonu)
 
 Araç: `tools/ghosting_test.py` (pygame-ce penceresi; anlık basılı scancode'ları ve her tick oluşan iki eylemi
