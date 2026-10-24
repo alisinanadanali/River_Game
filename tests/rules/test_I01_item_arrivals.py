@@ -70,12 +70,3 @@ def test_arrivals_in_a_game():
     assert [i.id for i in items] == list(range(len(items))) and len(items) == len(arrived)
     assert all(i.kind == e.kind for i, e in zip(items, arrived, strict=True))
     assert {i.status for i in items} <= {ItemStatus.ON_BANK, ItemStatus.LOST}
-
-
-def test_appendix_a5_item_economy():
-    # MODEL A.5: per item 24 kg, 1.7 volume, 2.6 points on average; ≈ 30 items per 300-tick game.
-    types = ITEMS.types.values()
-    assert sum(t.prob * t.mass_kg for t in types) == pytest.approx(24.0)
-    assert sum(t.prob * t.volume for t in types) == pytest.approx(1.7)
-    assert sum(t.prob * t.points for t in types) == pytest.approx(2.6)
-    assert ITEMS.arrival_rate_per_tick * CFG.time.game_length_ticks == pytest.approx(30.0)

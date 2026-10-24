@@ -442,6 +442,6 @@ kıyı ancak Shrek uzun süre barajla meşgulken taşar.
 ### A.6 Kaya ömrü
 
 Geçici taş 20 cm'de doğar, 1 cm/tick batar, −5 cm'de kaybolur: ömür 25 tick. Yüklü eşek altında KURU kalma
-süresi ≈ 15 tick (motor 14 verir: taş doğduğu tick de batar; `tests/rules/test_S07_matches_appendix_A6.py`). Prompt'taki 20 tick'lik cooldown ile iki geçici taş yalnızca 5 tick birlikte var olabilir. Bu
+süresi ≈ 15 tick (motor 14 verir: taş doğduğu tick de batar; `tests/rules/test_S07_rock.py`). Prompt'taki 20 tick'lik cooldown ile iki geçici taş yalnızca 5 tick birlikte var olabilir. Bu
 yüzden varsayılan cooldown **15** tick'tir (10 tick örtüşme). `hard` profilinde ≤ 3 kaya gereken haritalar
 için `rock_max_active = 3` ve cooldown 12'dir.

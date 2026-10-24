@@ -16,7 +16,7 @@ from engine.rng import draw_blocks
 from engine.step import step
 from engine.stones import TempStone
 
-from tests.support import config_with, run, set_up, still
+from tests.support import run, set_up, still
 
 CFG = still({"map": {"rows": 3, "cols": 5}})
 D = CFG.donkey
@@ -131,30 +131,7 @@ def test_the_move_still_happens():
     assert [(e.from_cell, e.to_cell) for e in trace.events if isinstance(e, DonkeyMoved)] == [((0, 2), (1, 2))]
 
 
-# --- MODEL Appendix A.4 ---------------------------------------------------------------------------------
-
-A4 = [  # imbalance kg, δ, p_slip, mossy p_slip, P(≥ 1 slip in 12 steps) on normal stones
-    (10, 0.048, 0.015, 0.024, 0.16),
-    (50, 0.200, 0.090, 0.250, 0.68),
-    (60, 0.231, 0.117, 0.330, 0.77),
-]
-
-
-@pytest.mark.parametrize(("kg", "delta", "p", "p_moss", "p12"), A4)
-def test_appendix_a4(kg, delta, p, p_moss, p12):
-    d = balance_of(kg)
-    assert d == pytest.approx(delta, abs=0.0005)
-    assert slip_probability(d, 1.0, D) == pytest.approx(p, abs=0.0005)
-    assert slip_probability(d, config_with({}).map.mossy_slip_multiplier, D) == pytest.approx(p_moss, abs=0.0005)
-    assert 1 - (1 - slip_probability(d, 1.0, D)) ** 12 == pytest.approx(p12, abs=0.005)
-
-
-def balance_of(kg: float) -> float:
-    # The table puts the whole imbalance on one side, the other side empty: δ = kg / (kg + m_D).
-    return kg / (kg + D.mass_kg)
-
-
-def test_appendix_a4_slip_rate_through_the_engine():
+def test_slip_rate_through_the_engine():
     # 3000 independent first steps off a stone with 50 kg on the left: slip frequency within 4 SE of 0.09.
     n, slips = 3000, 0
     state, rngs = set_up(CFG, LINE, items=ITEMS, donkey={"row": 0, "col": 2, **WATERMELON_LEFT})

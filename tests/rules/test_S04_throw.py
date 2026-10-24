@@ -3,11 +3,14 @@ landing = target + σ·(z₁, z₂) with z = u_throw (rng_throw block) and σ = 
 The projectile does not move in its throw tick, so with throw_flight_ticks = 2 a throw at t lands at t + 2.
 """
 
+import math
+
+import numpy as np
 import pytest
 
 from engine.actions import Ability, Actions, Aim, ShrekAction
 from engine.events import ActionRejected, DamReleased, ItemThrown, ProjectileKind, RejectReason
-from engine.items import Bank, Item, ItemStatus
+from engine.items import Bank, Item, ItemStatus, landing_point
 from engine.rng import draw_blocks
 from engine.shrek import throw_sigma
 
@@ -86,3 +89,19 @@ def test_lands_two_ticks_later():
     trace = run(cfg, 1, [THROW, Actions(), Actions()], start=loaded(cfg=cfg, donkey={"col": 0}))
     assert [len(s.projectiles) for s in trace.states] == [1, 1, 0]
     assert trace.states[2].items[0].status is not ItemStatus.IN_FLIGHT
+
+
+@pytest.mark.parametrize(("aim_row", "mass"), [(0, 10.0), (4, 30.0), (8, 50.0)])
+def test_catch_frequency_through_landing_point_is_the_rayleigh_formula(aim_row, mass):
+    # tools/design_calcs checks MODEL A.3 with P = 1 − exp(−r²/2σ²). This ties that formula to the engine's own
+    # landing draw: the share of landings within r of the target, within 4 standard errors.
+    n, r = 20_000, SH.catch_radius_cells
+    g = np.random.Generator(np.random.PCG64(aim_row * 1000 + int(mass)))
+    sigma = throw_sigma(aim_row, mass, SH)
+    target = (aim_row, 4)
+    hits = 0
+    for z in g.standard_normal((n, 2)):
+        row, col = landing_point(target, sigma, z)
+        hits += math.hypot(row - target[0], col - target[1]) <= r
+    exact = 1 - math.exp(-r * r / (2 * sigma * sigma))
+    assert abs(hits / n - exact) < 4 * math.sqrt(exact * (1 - exact) / n)

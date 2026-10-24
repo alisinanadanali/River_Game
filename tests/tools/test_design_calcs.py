@@ -114,7 +114,7 @@ def test_stone_path_steps():
 
 
 def test_rock_lifetime_matches_the_engine_tests():
-    # tests/rules/test_S07_matches_appendix_A6.py measures the same through step: 25 ticks, 14 of them DRY.
+    # tests/rules/test_S07_rock.py measures the same through step: 25 ticks, 14 of them DRY.
     assert rock_lifetime(config_with({})) == (25, 14)
 
 

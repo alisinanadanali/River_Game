@@ -8,7 +8,7 @@ is swept (D-04); so is one whose slow move ends on it (D-05).
 import pytest
 
 from engine.actions import Ability, Actions, Aim, DonkeyAction, ShrekAction, ShrekMove
-from engine.donkey import DepthState
+from engine.donkey import Bag, DepthState
 from engine.events import (
     ActionRejected, DonkeyMoved, DonkeySwept, RaiseTarget, RejectReason, SweptCause, TempStoneRaised,
     TempStoneSpawned, TempStoneVanished,
@@ -153,3 +153,21 @@ def test_a_temporary_stone_carries_the_donkey():
     trace = run(cfg, 1, [Actions(donkey=DonkeyAction.MOVE_N, shrek=ShrekAction(ability=Ability.ROCK))],
                 start=set_up(cfg, OPEN))
     assert trace.states[0].donkey.depth == pytest.approx(-(19.0 - 200 / 40))
+
+
+def test_a_loaded_donkey_stays_dry_on_a_fresh_stone_for_14_ticks():
+    # MODEL A.6: 200 + 60 kg on 50 kg/cm sinks 5.2 cm, DRY while h(t) > 5.2 cm in still water. The stone already
+    # sinks in its first tick (step 6), so the engine gives 14 DRY ticks where the appendix rounds to ≈ 15.
+    bag = Bag(items=(0,), mass=60.0, volume=1)
+    step_on = Actions(donkey=DonkeyAction.MOVE_N, shrek=ShrekAction(ability=Ability.ROCK))
+    trace = run(CFG, 1, [step_on] + [NOOP] * 20, start=set_up(CFG, OPEN, donkey={"bag_left": bag}))
+    dry = [s.donkey.depth_state is DepthState.DRY for s in trace.states]
+    assert dry.index(False) == 14
+
+
+def test_two_stones_a_cooldown_apart_overlap_for_lifetime_minus_cooldown():
+    # MODEL A.6: with cooldown 15, two temporary stones stand together for 25 − 15 = 10 ticks.
+    second = Actions(shrek=ShrekAction(aim=Aim.UP, ability=Ability.ROCK))
+    plan = [ROCK] + [NOOP] * (SH.rock_cooldown_ticks - 1) + [second] + [NOOP] * 30
+    trace = run(CFG, 1, plan, start=set_up(CFG, OPEN))
+    assert sum(len(s.stones.temp) == 2 for s in trace.states) == LIFETIME - SH.rock_cooldown_ticks == 10
