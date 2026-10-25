@@ -27,6 +27,7 @@ from engine.rng import Rngs
 from engine.state import GameState, new_game
 from engine.step import PIPELINE, GameFinishedError, step
 from engine.tick import Tick
+from render.strings_tr import decimal, tr
 
 ROADMAP_TICKS_PER_S = 5_000  # ROADMAP Phase 0 acceptance
 ROLES = (Role.DONKEY, Role.SHREK)
@@ -114,7 +115,7 @@ def stage_times(config: Config, actions: list[Actions], clock: Clock = time.perf
 
 
 def _rate(x: float) -> str:
-    return f"{x:,.0f}".replace(",", " ")
+    return tr("{x:,.0f}", x=x).replace(",", " ")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -132,18 +133,18 @@ def main(argv: list[str] | None = None) -> int:
     rl = measure(config, played, repeats=args.repeats, roles=len(ROLES))
     ok = rand.ticks_per_s >= ROADMAP_TICKS_PER_S
     print(f"Hız (config: {args.profile or 'default'}, {args.ticks} tick × {args.repeats} tekrar, en hızlısı)")
-    print(f"  boş eylem       {noop.us_per_tick:7.1f} µs/tick  {_rate(noop.ticks_per_s):>7} tick/sn")
-    print(f"  rastgele eylem  {rand.us_per_tick:7.1f} µs/tick  {_rate(rand.ticks_per_s):>7} tick/sn"
+    print(f"  boş eylem       {decimal(noop.us_per_tick, 1):>7} µs/tick  {_rate(noop.ticks_per_s):>7} tick/sn")
+    print(f"  rastgele eylem  {decimal(rand.us_per_tick, 1):>7} µs/tick  {_rate(rand.ticks_per_s):>7} tick/sn"
           f"   ROADMAP ≥ {_rate(ROADMAP_TICKS_PER_S)} tick/sn {'✓' if ok else '✗'}")
-    print(f"  RL döngüsü      {rl.us_per_tick:7.1f} µs/tick  {_rate(rl.ticks_per_s):>7} tick/sn   (step + iki rol için observe)")
+    print(f"  RL döngüsü      {decimal(rl.us_per_tick, 1):>7} µs/tick  {_rate(rl.ticks_per_s):>7} tick/sn   (step + iki rol için observe)")
     print(f"  ({rand.games} oyun)")
     if args.stages:
         times = stage_times(config, played)
         total = sum(times)
         print("\nTICK.md adımı başına (rastgele eylem, tek geçiş):")
         for label, us in zip(stage_labels(), times, strict=True):
-            print(f"  {label:<24} {us:6.1f} µs  {us / total:5.1%}")
-        print(f"  {'toplam':<24} {total:6.1f} µs")
+            print(f"  {label:<24} {decimal(us, 1):>6} µs  {'%' + decimal(100 * us / total, 1):>6}")
+        print(f"  {'toplam':<24} {decimal(total, 1):>6} µs")
     return 0 if ok else 1
 
 

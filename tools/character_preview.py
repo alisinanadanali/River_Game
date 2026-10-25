@@ -208,6 +208,7 @@ def _draw_frame(pygame, screen, state: PreviewState, sprites: dict, font, now_s:
         PREVIEW_VALUES,
         PREVIEW_WATER,
         ROLE_NAMES,
+        tr,
     )
 
     cfg = state.cfg
@@ -241,9 +242,9 @@ def _draw_frame(pygame, screen, state: PreviewState, sprites: dict, font, now_s:
         lines = [
             ROLE_NAMES[role] + (PREVIEW_SELECTED if role is state.role else ""),
             f"{CLIP_NAMES[clip]} ({clip.value}, {mode})",
-            PREVIEW_VALUES.format(height=look_cfg.height_px, pose=pose_name, ax=p.anchor[0], ay=p.anchor[1],
-                                  scale=p.scale),
-            PREVIEW_WATER.format(depth=state.depth_cm),
+            tr(PREVIEW_VALUES, height=look_cfg.height_px, pose=pose_name, ax=p.anchor[0], ay=p.anchor[1],
+               scale=p.scale),
+            tr(PREVIEW_WATER, depth=state.depth_cm),
         ]
         if sprites[role].is_fallback:
             lines.append(PREVIEW_FALLBACK.format(files=", ".join(sprites[role].missing)))
@@ -290,7 +291,7 @@ def _bench(pygame, cfg: Config, frames: int) -> int:
     from render.characters.animator import Look
     from render.characters.pose import pose
     from render.characters.sprites import draw
-    from render.strings_tr import PREVIEW_BENCH, PREVIEW_KIND_IMAGE, PREVIEW_KIND_SHAPE, ROLE_NAMES
+    from render.strings_tr import PREVIEW_BENCH, PREVIEW_KIND_IMAGE, PREVIEW_KIND_SHAPE, ROLE_NAMES, tr
 
     screen = pygame.Surface(cfg.render.window_px)
     sprites = _load(cfg)
@@ -312,7 +313,7 @@ def _bench(pygame, cfg: Config, frames: int) -> int:
     kinds = ", ".join(
         f"{ROLE_NAMES[r]}: {PREVIEW_KIND_SHAPE if sprites[r].is_fallback else PREVIEW_KIND_IMAGE}" for r in Role
     )
-    print(PREVIEW_BENCH.format(us=min(runs) * 1e6, kinds=kinds, fps=fps, share=100 * min(runs) * fps))
+    print(tr(PREVIEW_BENCH, us=min(runs) * 1e6, kinds=kinds, fps=fps, share=100 * min(runs) * fps))
     return 0
 
 

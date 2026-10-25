@@ -1,7 +1,34 @@
 """Turkish UI strings (ADR-007), in one place. Identifiers stay English; only what the player reads is here."""
 
+import re
+import string
+
 from engine.events import DepthState, Role, Side
 from render.characters.pose import Clip
+
+
+class _Turkish(string.Formatter):
+    """str.format, with the fractional fields' decimal point written as a comma (VISUALS §7)."""
+
+    def format_field(self, value, format_spec: str) -> str:
+        text = super().format_field(value, format_spec)
+        return text.replace(".", DECIMAL_COMMA) if FRACTION_SPEC.search(format_spec) else text
+
+
+DECIMAL_COMMA = ","
+FRACTION_SPEC = re.compile(r"[fFgGeE%]$")   # a format spec that can write a decimal point
+_TURKISH = _Turkish()
+
+
+def tr(template: str, /, **values) -> str:
+    """VISUALS §7: template.format(**values) with a decimal comma in the fractional fields."""
+    return _TURKISH.format(template, **values)
+
+
+def decimal(x: float, digits: int) -> str:
+    """VISUALS §7: one number with `digits` decimals and a decimal comma."""
+    return tr("{x:.{digits}f}", x=x, digits=digits)
+
 
 # Names of the game's things, shared by every interface
 ROLE_NAMES = {Role.SHREK: "Shrek", Role.DONKEY: "Eşek"}
@@ -100,6 +127,9 @@ TACTICAL_DAM_HELD = "Baraj: sütun {col}, Q = {volume:.1f} / {q_max:g} cm·sütu
 TACTICAL_DAM_IDLE = "Baraj: tutulmuyor"
 TACTICAL_DAM_LOCKED = "  (patladı: DAM bırakılana kadar kilitli)"
 TACTICAL_WATER = "Su: B = {base:.1f} cm; dalgalar: {waves}"
+TACTICAL_WAVE = "x = {x:.1f} A = {amplitude:.1f} cm"
+TACTICAL_DEPTH = " d = {depth:.1f} cm"
+TACTICAL_FLOATING = "{name} ({row:.0f}, {x:.2f})"
 TACTICAL_NO_WAVES = "yok"
 TACTICAL_FLYING = "{name} → {target}, {ticks} tick"
 TACTICAL_AIRBORNE = "Uçan: {flying}   Yüzen: {floating}"

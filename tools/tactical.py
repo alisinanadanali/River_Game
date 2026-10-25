@@ -34,10 +34,12 @@ from render.strings_tr import (
     TACTICAL_DAM_HELD,
     TACTICAL_DAM_IDLE,
     TACTICAL_DAM_LOCKED,
+    TACTICAL_DEPTH,
     TACTICAL_DONKEY,
     TACTICAL_DONKEY_GLYPH,
     TACTICAL_DONKEY_PROMPT,
     TACTICAL_EVENTS,
+    TACTICAL_FLOATING,
     TACTICAL_FLYING,
     TACTICAL_HEADER,
     TACTICAL_HELP,
@@ -56,7 +58,9 @@ from render.strings_tr import (
     TACTICAL_TWO_KEYS,
     TACTICAL_WAIT_ALONE,
     TACTICAL_WATER,
+    TACTICAL_WAVE,
     TURKISH_I,
+    tr,
 )
 
 HID_A, HID_Z, HID_SPACE = 4, 29, 44  # USB HID usage page 7 (= SDL scancodes): 4 … 29 are a … z, 44 the space bar
@@ -155,7 +159,7 @@ def _map_lines(obs: Observation) -> list[str]:
             left, right = markers.get((r, c), "  ")
             cells.append(left + glyphs[(r, c)] + right)
         lines.append(f"{r:>3} |" + "".join(cells))
-    lines.append("  L |" + "".join(f"{level:>{CELL - 1}.0f} " for level in obs.water.level))
+    lines.append("  L |" + "".join(tr("{level:>{w}.0f} ", level=level, w=CELL - 1) for level in obs.water.level))
     return lines
 
 
@@ -177,7 +181,7 @@ def _terrain(obs: Observation, r: int, c: int) -> str:
 
 def _panel_lines(obs: Observation) -> list[str]:
     cfg, donkey, shrek, dam = obs.config, obs.donkey, obs.shrek, obs.dam
-    depth = DEPTH_NAMES[donkey.depth_state] + ("" if donkey.depth is None else f" d = {donkey.depth:.1f} cm")
+    depth = DEPTH_NAMES[donkey.depth_state] + ("" if donkey.depth is None else tr(TACTICAL_DEPTH, depth=donkey.depth))
     stance = SIDE_NAMES[donkey.stance]
     if donkey.stance is not Side.NONE:
         stance += TACTICAL_READY if stance_ready(donkey, obs.t) else TACTICAL_READY_NEXT_TICK
@@ -188,24 +192,25 @@ def _panel_lines(obs: Observation) -> list[str]:
     next_item = TACTICAL_QUEUE_EMPTY
     if head is not None:
         mass = item_type(cfg.items, obs.items[head].kind).mass_kg
-        next_item = TACTICAL_NEXT_SIGMA.format(sigma=throw_sigma(shrek.aim_row, mass, cfg.shrek))
+        next_item = tr(TACTICAL_NEXT_SIGMA, sigma=throw_sigma(shrek.aim_row, mass, cfg.shrek))
     if dam.active:
-        dam_line = TACTICAL_DAM_HELD.format(col=dam.col, volume=dam.volume, q_max=cfg.dam.q_max_cm_cols)
+        dam_line = tr(TACTICAL_DAM_HELD, col=dam.col, volume=dam.volume, q_max=cfg.dam.q_max_cm_cols)
     else:
         dam_line = TACTICAL_DAM_IDLE + (TACTICAL_DAM_LOCKED if dam.burst_lock else "")
-    waves = ", ".join(f"x = {w.x:.1f} A = {w.amplitude:.1f} cm" for w in obs.water.waves) or TACTICAL_NO_WAVES
+    waves = ", ".join(tr(TACTICAL_WAVE, x=w.x, amplitude=w.amplitude) for w in obs.water.waves) or TACTICAL_NO_WAVES
     flying = ", ".join(
         TACTICAL_FLYING.format(name=_item_name(obs, p.item_id), target=p.target, ticks=p.ticks_left)
         for p in obs.projectiles
     )
     floating = ", ".join(
-        f"{_item_name(obs, i.id)} ({i.pos[0]:.0f}, {i.pos[1]:.2f})" for i in obs.items if i.status is ItemStatus.FLOATING
+        tr(TACTICAL_FLOATING, name=_item_name(obs, i.id), row=i.pos[0], x=i.pos[1]) for i in obs.items if i.status is ItemStatus.FLOATING
     )
     return [
         "",
         TACTICAL_HEADER.format(t=obs.t, length=cfg.time.game_length_ticks, score=obs.score, lives=donkey.lives),
         TACTICAL_DONKEY.format(row=donkey.row, col=donkey.col, depth=depth, stance=stance, moving=moving),
-        TACTICAL_BAGS.format(
+        tr(
+            TACTICAL_BAGS,
             left=_bag(obs, donkey.bag_left), right=_bag(obs, donkey.bag_right), balance=balance(donkey, cfg)
         ),
         TACTICAL_SHREK.format(
@@ -217,14 +222,15 @@ def _panel_lines(obs: Observation) -> list[str]:
             names=", ".join(_item_name(obs, i) for i in obs.bank.queue) or EMPTY, next_item=next_item,
         ),
         dam_line,
-        TACTICAL_WATER.format(base=obs.water.base_level, waves=waves),
+        tr(TACTICAL_WATER, base=obs.water.base_level, waves=waves),
         TACTICAL_AIRBORNE.format(flying=flying or EMPTY, floating=floating or EMPTY),
     ]
 
 
 def _bag(obs: Observation, bag) -> str:
     d = obs.config.donkey
-    return TACTICAL_BAG.format(
+    return tr(
+        TACTICAL_BAG,
         names=", ".join(_item_name(obs, i) for i in bag.items) or TACTICAL_BAG_EMPTY,
         mass=bag.mass, max_kg=d.bag_max_kg_per_side, volume=bag.volume, max_volume=d.bag_max_volume_per_side,
     )

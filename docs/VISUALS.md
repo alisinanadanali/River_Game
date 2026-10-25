@@ -200,7 +200,13 @@ Faz 1'in ilk oynanabilir penceresi; sonraki adımlar her parçayı yerine koyar 
   Kontrol `pygame.freetype` ile yapılır, çünkü `pygame.font` eksik glif yerine sessizce kutu çizer. Noto Sans'ta
   ok (← →) ve `≥` yoktur; arayüz metninde kullanılmaz. Terminale yazılan taktik mod metinleri (`TACTICAL_`
   önekli) font kullanmadığından bu kontrolün dışındadır.
-- Ondalık ayırıcı virgül (`0,6 sn`).
+- Ondalık ayırıcı virgül (`0,6 sn`), yüzde işareti sayının önünde (`%1,5`). Kesirli sayı yazan her şablon
+  `strings_tr.tr(şablon, …)` ile doldurulur (`str.format` gibi, ama kesirli alanlarda nokta yerine virgül); tek
+  sayı için `strings_tr.decimal(x, basamak)`. **Test** (`tests/render/test_strings.py`): taranan dosyalarda
+  kesirli biçim (`f`, `g`, `e`, `%`) içeren bir f-string alanı ya da böyle bir şablona `.format(` çağrısı yoktur.
+  İstisna yalnız `tools/design_calcs.py`'dir (MODEL.md'den alıntılarla eşleşir); hız raporu (`tools/bench.py`)
+  da virgül kullanır. Terminale basılan config parçası (önizlemede P) YAML olduğu için noktalıdır; o bir şablon
+  değil, `yaml` çıktısıdır.
 
 ## 8. Kademe 2 — Görsel cila (Faz 1.5)
 
