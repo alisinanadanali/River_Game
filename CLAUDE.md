@@ -79,6 +79,8 @@ event schema 1 is frozen and fingerprinted (`tests/engine/test_version.py`): an 
 `EVENT_SCHEMA_VERSION`. Phase 1 started with the characters (VISUALS §9, ADR-012): `render/characters/` —
 `pose.py` (pure clips), `animator.py` (pure clip state machine: loops from the state, one-shots from events),
 `sprites.py` (pygame: local images from `assets/private/`, never in git, or the fallback shape) — plus
-`render/interpolation.py`, `render/strings_tr.py` (all UI strings) and `tools/character_preview.py` (`--bench`
+`render/interpolation.py`, `render/strings_tr.py` (all UI strings, the tools' too; an AST test keeps every
+string with a Turkish letter there, VISUALS §7), `render/fonts.py` (committed Noto fonts in `assets/fonts/`,
+hashes in VISUALS §7) and `tools/character_preview.py` (`--bench`
 ≈ 240 µs/frame). `tests/render/test_render_imports.py` guards render/'s imports (ADR-005 update). Next: the
-Phase 1 micro-steps (ROADMAP).
+Phase 1 micro-steps (ROADMAP); 1.0 (fonts + strings) done, next 1.1 (keyboard input buffer).

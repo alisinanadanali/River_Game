@@ -251,23 +251,19 @@ def _draw_frame(pygame, screen, state: PreviewState, sprites: dict, font, now_s:
         x = round(fx - cfg.render.window_px[0] / 4) + LINE_PX
         for i, line in enumerate(lines):
             screen.blit(font.render(line, True, TEXT if i < 2 else DIM), (x, LINE_PX + i * LINE_PX))
-    screen.blit(font.render(PREVIEW_HINT, True, DIM), (LINE_PX, cfg.render.window_px[1] - 2 * LINE_PX))
-
-
-def _font(pygame, cfg: Config):
-    try:
-        return pygame.font.Font(cfg.render.font, FONT_PX)
-    except (OSError, FileNotFoundError):
-        return pygame.font.Font(None, FONT_PX)  # the Noto font arrives in Phase 1 (VISUALS §7)
+    for i, line in enumerate(PREVIEW_HINT):
+        y = cfg.render.window_px[1] - (len(PREVIEW_HINT) + 1 - i) * LINE_PX
+        screen.blit(font.render(line, True, DIM), (LINE_PX, y))
 
 
 def _window(pygame, state: PreviewState, frames: int) -> int:
+    from render.fonts import load_font
     from render.strings_tr import PREVIEW_PRINTED, PREVIEW_TITLE
 
     cfg = state.cfg
     screen = pygame.display.set_mode(cfg.render.window_px)
     pygame.display.set_caption(PREVIEW_TITLE)
-    font, clock, keys = _font(pygame, cfg), pygame.time.Clock(), _keys(pygame)
+    font, clock, keys = load_font(cfg, FONT_PX), pygame.time.Clock(), _keys(pygame)
     sprites = _load(cfg)
     count = 0
     while frames == 0 or count < frames:

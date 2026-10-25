@@ -19,6 +19,44 @@ from engine.shrek import throw_sigma
 from engine.state import GameState, new_game
 from engine.step import step
 from engine.stones import temp_at
+from render.strings_tr import (
+    DEPTH_NAMES,
+    GAME_OVER_REASONS,
+    ITEM_NAMES,
+    SIDE_NAMES,
+    TACTICAL_AIRBORNE,
+    TACTICAL_BAD_KEY,
+    TACTICAL_BAG,
+    TACTICAL_BAG_EMPTY,
+    TACTICAL_BAGS,
+    TACTICAL_BANK,
+    TACTICAL_DAM_HELD,
+    TACTICAL_DAM_IDLE,
+    TACTICAL_DAM_LOCKED,
+    TACTICAL_DONKEY,
+    TACTICAL_DONKEY_GLYPH,
+    TACTICAL_DONKEY_PROMPT,
+    TACTICAL_EVENTS,
+    TACTICAL_FLYING,
+    TACTICAL_HEADER,
+    TACTICAL_HELP,
+    TACTICAL_MOVING,
+    TACTICAL_NEXT_SIGMA,
+    TACTICAL_NO_WAVES,
+    TACTICAL_ONE_KEY,
+    TACTICAL_QUEUE_EMPTY,
+    TACTICAL_QUIT,
+    TACTICAL_READY,
+    TACTICAL_READY_NEXT_TICK,
+    TACTICAL_RESULT,
+    TACTICAL_SHREK,
+    TACTICAL_SHREK_GLYPH,
+    TACTICAL_SHREK_PROMPT,
+    TACTICAL_TWO_KEYS,
+    TACTICAL_WAIT_ALONE,
+    TACTICAL_WATER,
+    TURKISH_I,
+)
 
 HID_A, HID_Z, HID_SPACE = 4, 29, 44  # USB HID usage page 7 (= SDL scancodes): 4 … 29 are a … z, 44 the space bar
 CELL = 4                             # characters per map cell: marker, two glyph characters, marker
@@ -31,28 +69,8 @@ SHREK_COMPONENTS = {                 # keymaps.shrek_alt action → (ShrekAction
     "ROCK": ("ability", Ability.ROCK),
     "DAM": ("ability", Ability.DAM),
 }
-TURKISH_I = str.maketrans({"ı": "i", "İ": "i", "I": "i"})  # Turkish Q: the I key types ı; "İ".lower() is "i̇"
-
-# UI strings (Turkish, ADR-007). Move to the strings module once render/ exists.
-DONKEY_PROMPT = "Eşek  > "
-SHREK_PROMPT = "Shrek > "
-GAME_OVER = "Oyun bitti"
-QUIT = "Çıkıldı."
-HELP = (
-    "Eşek: w/a/s/d yürü, q/e duruş (sol/sağ), x ya da boş satır bekle.\n"
-    "Shrek: j/l yürü, i/k nişan, u fırlat, o kaya, boşluk baraj; bileşen başına bir tuş (ör. 'li', 'iu'). "
-    "m ya da boş satır bekle.\n"
-    "Komutlar: ? yardım, :q çık, :N (eşek satırında) iki oyuncu N tick bekler."
-)
-BAD_KEY = "! '{key}' tanımlı bir tuş değil"
-ONE_KEY = "! eşek tek tuşla oynar"
-TWO_KEYS = "! aynı bileşene iki tuş: '{a}' ve '{b}'"
-WAIT_ALONE = "! 'm' (bekle) tek başına yazılır"
+EMPTY = "—"                          # an empty list in the panels
 TIERS = {DepthState.DRY: "K", DepthState.ANKLE: "B", DepthState.KNEE: "D", DepthState.SWEPT: "!"}
-DEPTH_NAMES = {DepthState.DRY: "KURU", DepthState.ANKLE: "BİLEK", DepthState.KNEE: "DİZ", DepthState.SWEPT: "SÜRÜKLENDİ"}
-SIDE_NAMES = {Side.LEFT: "sol", Side.RIGHT: "sağ", Side.NONE: "yok"}
-ITEM_NAMES = {"apple_crate": "Elma kasası", "potato_sack": "Patates çuvalı", "watermelon": "Karpuz"}
-REASONS = {"time": "süre doldu", "lives": "can kalmadı"}
 
 
 class InputError(ValueError):
@@ -94,9 +112,9 @@ def parse_donkey(line: str, keys: dict[str, DonkeyAction]) -> DonkeyAction:
     if text == "":
         return DonkeyAction.NOOP
     if len(text) > 1:
-        raise InputError(ONE_KEY)
+        raise InputError(TACTICAL_ONE_KEY)
     if text not in keys:
-        raise InputError(BAD_KEY.format(key=text))
+        raise InputError(TACTICAL_BAD_KEY.format(key=text))
     return keys[text]
 
 
@@ -106,14 +124,14 @@ def parse_shrek(line: str, keys: dict[str, tuple[str, Enum] | None]) -> ShrekAct
     chosen: dict[str, tuple[str, Enum]] = {}
     for key in text:
         if key not in keys:
-            raise InputError(BAD_KEY.format(key=key))
+            raise InputError(TACTICAL_BAD_KEY.format(key=key))
         if keys[key] is None:
             if len(text) > 1:
-                raise InputError(WAIT_ALONE)
+                raise InputError(TACTICAL_WAIT_ALONE)
             continue
         component, value = keys[key]
         if component in chosen:
-            raise InputError(TWO_KEYS.format(a=chosen[component][0], b=key))
+            raise InputError(TACTICAL_TWO_KEYS.format(a=chosen[component][0], b=key))
         chosen[component] = (key, value)
     return ShrekAction(**{component: value for component, (_, value) in chosen.items()})
 
@@ -133,8 +151,8 @@ def _map_lines(obs: Observation) -> list[str]:
             cell = (round(item.pos[0]), round_half_up(item.pos[1]))
             if cell in glyphs:
                 glyphs[cell] = "**"
-    glyphs[(-1, obs.shrek.col)] = "Sh"
-    glyphs[(obs.donkey.row, obs.donkey.col)] = "Eş"  # in front of Shrek when both stand in one bank cell
+    glyphs[(-1, obs.shrek.col)] = TACTICAL_SHREK_GLYPH
+    glyphs[(obs.donkey.row, obs.donkey.col)] = TACTICAL_DONKEY_GLYPH  # in front of Shrek when both stand in one bank cell
     markers = {(obs.shrek.aim_row, obs.shrek.col): "[]"}
     markers.update({p.target: "()" for p in obs.projectiles})  # the shadow sits on the target (VISUALS §5)
 
@@ -170,42 +188,54 @@ def _panel_lines(obs: Observation) -> list[str]:
     depth = DEPTH_NAMES[donkey.depth_state] + ("" if donkey.depth is None else f" d = {donkey.depth:.1f} cm")
     stance = SIDE_NAMES[donkey.stance]
     if donkey.stance is not Side.NONE:
-        stance += " (hazır)" if stance_ready(donkey, obs.t) else " (bir tick sonra hazır)"
-    moving = "" if donkey.move_target is None else f"  ·  yavaş hareket → {donkey.move_target}, {donkey.move_remaining} tick"
+        stance += TACTICAL_READY if stance_ready(donkey, obs.t) else TACTICAL_READY_NEXT_TICK
+    moving = "" if donkey.move_target is None else TACTICAL_MOVING.format(
+        target=donkey.move_target, remaining=donkey.move_remaining
+    )
     head = obs.bank.queue[0] if obs.bank.queue else None
-    next_item = "kuyruk boş"
+    next_item = TACTICAL_QUEUE_EMPTY
     if head is not None:
         mass = item_type(cfg.items, obs.items[head].kind).mass_kg
-        next_item = f"sıradaki σ = {throw_sigma(shrek.aim_row, mass, cfg.shrek):.2f} hücre"
+        next_item = TACTICAL_NEXT_SIGMA.format(sigma=throw_sigma(shrek.aim_row, mass, cfg.shrek))
     if dam.active:
-        dam_line = f"Baraj: sütun {dam.col}, Q = {dam.volume:.1f} / {cfg.dam.q_max_cm_cols:g} cm·sütun"
+        dam_line = TACTICAL_DAM_HELD.format(col=dam.col, volume=dam.volume, q_max=cfg.dam.q_max_cm_cols)
     else:
-        dam_line = "Baraj: tutulmuyor" + ("  (patladı: DAM bırakılana kadar kilitli)" if dam.burst_lock else "")
-    waves = ", ".join(f"x = {w.x:.1f} A = {w.amplitude:.1f} cm" for w in obs.water.waves) or "yok"
-    flying = ", ".join(f"{_item_name(obs, p.item_id)} → {p.target}, {p.ticks_left} tick" for p in obs.projectiles)
+        dam_line = TACTICAL_DAM_IDLE + (TACTICAL_DAM_LOCKED if dam.burst_lock else "")
+    waves = ", ".join(f"x = {w.x:.1f} A = {w.amplitude:.1f} cm" for w in obs.water.waves) or TACTICAL_NO_WAVES
+    flying = ", ".join(
+        TACTICAL_FLYING.format(name=_item_name(obs, p.item_id), target=p.target, ticks=p.ticks_left)
+        for p in obs.projectiles
+    )
     floating = ", ".join(
         f"{_item_name(obs, i.id)} ({i.pos[0]:.0f}, {i.pos[1]:.2f})" for i in obs.items if i.status is ItemStatus.FLOATING
     )
     return [
         "",
-        f"t = {obs.t} / {cfg.time.game_length_ticks}   Skor: {obs.score}   Can: {donkey.lives}",
-        f"Eşek: ({donkey.row}, {donkey.col})  {depth}  ·  duruş: {stance}{moving}",
-        f"  sol heybe: {_bag(obs, donkey.bag_left)}   sağ heybe: {_bag(obs, donkey.bag_right)}"
-        f"   denge δ = {balance(donkey, cfg):+.2f}",
-        f"Shrek: sütun {shrek.col}, nişan satırı {shrek.aim_row}  ·  fırlat cd {shrek.throw_cooldown}"
-        f"  ·  kaya cd {shrek.rock_cooldown}  ·  geçici taş {len(obs.stones.temp)}/{cfg.shrek.rock_max_active}",
-        f"  kıyı kuyruğu {len(obs.bank.queue)}/{cfg.items.bank_capacity}: "
-        f"{', '.join(_item_name(obs, i) for i in obs.bank.queue) or '—'}  ·  {next_item}",
+        TACTICAL_HEADER.format(t=obs.t, length=cfg.time.game_length_ticks, score=obs.score, lives=donkey.lives),
+        TACTICAL_DONKEY.format(row=donkey.row, col=donkey.col, depth=depth, stance=stance, moving=moving),
+        TACTICAL_BAGS.format(
+            left=_bag(obs, donkey.bag_left), right=_bag(obs, donkey.bag_right), balance=balance(donkey, cfg)
+        ),
+        TACTICAL_SHREK.format(
+            col=shrek.col, aim_row=shrek.aim_row, throw_cd=shrek.throw_cooldown, rock_cd=shrek.rock_cooldown,
+            temp=len(obs.stones.temp), temp_max=cfg.shrek.rock_max_active,
+        ),
+        TACTICAL_BANK.format(
+            queued=len(obs.bank.queue), capacity=cfg.items.bank_capacity,
+            names=", ".join(_item_name(obs, i) for i in obs.bank.queue) or EMPTY, next_item=next_item,
+        ),
         dam_line,
-        f"Su: B = {obs.water.base_level:.1f} cm; dalgalar: {waves}",
-        f"Uçan: {flying or '—'}   Yüzen: {floating or '—'}",
+        TACTICAL_WATER.format(base=obs.water.base_level, waves=waves),
+        TACTICAL_AIRBORNE.format(flying=flying or EMPTY, floating=floating or EMPTY),
     ]
 
 
 def _bag(obs: Observation, bag) -> str:
-    names = ", ".join(_item_name(obs, i) for i in bag.items) or "boş"
     d = obs.config.donkey
-    return f"{names} ({bag.mass:g}/{d.bag_max_kg_per_side:g} kg, {bag.volume}/{d.bag_max_volume_per_side} hacim)"
+    return TACTICAL_BAG.format(
+        names=", ".join(_item_name(obs, i) for i in bag.items) or TACTICAL_BAG_EMPTY,
+        mass=bag.mass, max_kg=d.bag_max_kg_per_side, volume=bag.volume, max_volume=d.bag_max_volume_per_side,
+    )
 
 
 def _item_name(obs: Observation, item_id: int) -> str:
@@ -215,7 +245,7 @@ def _item_name(obs: Observation, item_id: int) -> str:
 
 def _event_lines(events: Iterable[Event]) -> list[str]:
     lines = [f"  {e.type} {_event_fields(e)}".rstrip() for e in events]
-    return ["Olaylar:", *lines] if lines else []
+    return [TACTICAL_EVENTS, *lines] if lines else []
 
 
 def _event_fields(event: Event) -> str:
@@ -244,13 +274,13 @@ def play(config: Config, seed: int, read: Callable[[str], str], write: Callable[
             try:
                 actions, waiting = _ask(read, write, keys)
             except Quit:
-                write(QUIT)
+                write(TACTICAL_QUIT)
                 return state
         state, rngs, events = step(state, actions, rngs)
         if waiting > 0:
             write("\n".join([f"t = {state.t}", *_event_lines(events)]))
     write(render(observe(state, Role.DONKEY), events))
-    write(f"{GAME_OVER} ({REASONS[state.game_over.value]}). Skor: {state.score}")
+    write(TACTICAL_RESULT.format(reason=GAME_OVER_REASONS[state.game_over.value], score=state.score))
     return state
 
 
@@ -258,7 +288,7 @@ def _ask(read, write, keys) -> tuple[Actions, int]:
     """(this tick's actions, extra ticks to wait). Bad lines are reported and asked again."""
     donkey_keys_, shrek_keys_ = keys
     while True:
-        line = _read(read, DONKEY_PROMPT, write)
+        line = _read(read, TACTICAL_DONKEY_PROMPT, write)
         if (m := re.fullmatch(r":(\d+)", line.strip())) and int(m[1]) > 0:
             return Actions(), int(m[1]) - 1
         try:
@@ -267,7 +297,7 @@ def _ask(read, write, keys) -> tuple[Actions, int]:
         except InputError as error:
             write(str(error))
     while True:
-        line = _read(read, SHREK_PROMPT, write)
+        line = _read(read, TACTICAL_SHREK_PROMPT, write)
         try:
             return Actions(donkey=donkey, shrek=parse_shrek(line, shrek_keys_)), 0
         except InputError as error:
@@ -284,6 +314,6 @@ def _read(read, prompt: str, write) -> str:
         if line.strip() == ":q":
             raise Quit
         if line.strip() == "?":
-            write(HELP)
+            write(TACTICAL_HELP)
             continue
         return line

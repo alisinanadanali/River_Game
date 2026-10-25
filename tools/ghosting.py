@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from engine.config import CONFIG_DIR, load_config
+from render.strings_tr import GHOSTING_REASONS
 
 LAYOUTS = {"default": "shrek_default", "alt": "shrek_alt"}
 
@@ -17,19 +18,23 @@ HOLD_MS = 3000  # CONTROLS.md §6: hold each combination for at least 3 s
 @dataclass(frozen=True)
 class Combo:
     id: str
-    reason: str
     donkey: tuple[str, ...]  # action names in keymaps.donkey
     shrek: tuple[str, ...]   # action names in keymaps.shrek_*
+
+    @property
+    def reason(self) -> str:
+        """CONTROLS.md §6 "Neden kritik", from the strings module."""
+        return GHOSTING_REASONS[self.id]
 
 
 # CONTROLS.md §6, in table order.
 COMBOS = (
-    Combo("W+UP+THROW", "Eşek ilerlerken Shrek nişanlayıp atıyor", ("MOVE_N",), ("AIM_UP", "THROW")),
-    Combo("D+RIGHT+DAM", "Eşek kaçarken Shrek yürümeye çalışıyor / baraj tutuyor", ("MOVE_E",), ("MOVE_E", "DAM")),
-    Combo("Q+DOWN+ROCK", "Duruş + kaya", ("STANCE_LEFT",), ("AIM_DOWN", "ROCK")),
-    Combo("W+D+LEFT+UP", "Dört yön birden", ("MOVE_N", "MOVE_E"), ("MOVE_W", "AIM_UP")),
-    Combo("E+DAM+UP", "Baraj tutarken nişan + duruş", ("STANCE_RIGHT",), ("DAM", "AIM_UP")),
-    Combo("A+S+THROW+ROCK", "En kötü durum", ("MOVE_W", "MOVE_S"), ("THROW", "ROCK")),
+    Combo("W+UP+THROW", ("MOVE_N",), ("AIM_UP", "THROW")),
+    Combo("D+RIGHT+DAM", ("MOVE_E",), ("MOVE_E", "DAM")),
+    Combo("Q+DOWN+ROCK", ("STANCE_LEFT",), ("AIM_DOWN", "ROCK")),
+    Combo("W+D+LEFT+UP", ("MOVE_N", "MOVE_E"), ("MOVE_W", "AIM_UP")),
+    Combo("E+DAM+UP", ("STANCE_RIGHT",), ("DAM", "AIM_UP")),
+    Combo("A+S+THROW+ROCK", ("MOVE_W", "MOVE_S"), ("THROW", "ROCK")),
 )
 
 

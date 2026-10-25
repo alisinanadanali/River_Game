@@ -10,13 +10,14 @@ import sys
 
 from engine.config import load_config
 from engine.world import MapGenerationError
+from render.strings_tr import TACTICAL_CLI_DESCRIPTION, TACTICAL_CLI_ERROR, TACTICAL_CLI_PROFILE_HELP
 from tools.tactical import play
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="tools.tactical_cli", description="Nehir Geçidi, metin taktik modu")
+    parser = argparse.ArgumentParser(prog="tools.tactical_cli", description=TACTICAL_CLI_DESCRIPTION)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--profile", default=None, help="config/profiles/<ad>.yaml; verilmezse default.yaml")
+    parser.add_argument("--profile", default=None, help=TACTICAL_CLI_PROFILE_HELP)
     args = parser.parse_args(argv)
     sys.stdout.reconfigure(encoding="utf-8")  # Turkish letters and map glyphs on any console code page
     sys.stderr.reconfigure(encoding="utf-8")
@@ -24,7 +25,7 @@ def main(argv: list[str] | None = None) -> int:
         config = load_config(args.profile)
         play(config, args.seed, input, print)
     except (ValueError, MapGenerationError) as error:
-        parser.exit(2, f"hata: {error}\n")
+        parser.exit(2, TACTICAL_CLI_ERROR.format(error=error))
     return 0
 
 

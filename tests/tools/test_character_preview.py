@@ -11,7 +11,11 @@ from engine.config import load_config  # noqa: E402
 from engine.events import Role  # noqa: E402
 from render.characters.pose import CLIPS_OF, LOOPS, Clip, duration_s  # noqa: E402
 from render.strings_tr import CLIP_NAMES  # noqa: E402
+from render.fonts import load_font  # noqa: E402
+from render.strings_tr import PREVIEW_HINT  # noqa: E402
 from tools.character_preview import (  # noqa: E402
+    FONT_PX,
+    LINE_PX,
     LOOP_SHOW_S,
     REST_S,
     Action,
@@ -140,6 +144,15 @@ def test_snippet_pastes_back_into_the_config(role):
 
 
 # --- the window ------------------------------------------------------------------------------------------------
+
+def test_key_hint_fits_the_window():
+    import pygame
+
+    pygame.font.init()
+    font = load_font(CFG, FONT_PX)
+    widest = max(font.size(line)[0] for line in PREVIEW_HINT)
+    assert widest + 2 * LINE_PX <= CFG.render.window_px[0]          # a margin of LINE_PX on both sides
+
 
 def test_window_runs_a_few_frames(capsys):
     assert main(["--frames", "3"]) == 0

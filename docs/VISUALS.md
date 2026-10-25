@@ -111,9 +111,31 @@ Her rolün paneli klavyede o rolün elinin olduğu tarafta durur: Eşek solda, S
 
 ## 7. Metin ve font
 
-- Tüm arayüz metinleri Türkçe ve `render/strings_tr.py` (ya da YAML) içinde tek yerde durur.
-- Font: **Noto Sans** (SIL OFL), `assets/fonts/` altında projeye dahil edilir; ğ ş ı İ ç ö ü testi Faz 1
-  kabul kriteridir. Sayısal katman için Noto Sans Mono.
+- Tüm arayüz metinleri Türkçe ve `render/strings_tr.py` içinde tek yerde durur (ADR-007). Buna oyun penceresi,
+  metin taktik modu (`tools/tactical.py`, terminal), ghosting testi ve karakter önizleme dahildir. Türkçe Q
+  klavyenin `ı`/`İ` girdi çevirisi (`TURKISH_I`) de dile ait veridir, aynı modüldedir.
+- **Kural ve testi:** Türkçe harf (ç ğ ı İ ö ş ü, büyükleriyle) içeren her string sabiti yalnız bu modülde
+  bulunur. `tests/render/test_strings.py` `engine/`, `render/`, `controllers/`, `game/`, `envs/`, `logs/`,
+  `tools/` ve `main.py`'nin sözdizim ağacını tarar; docstring'ler sayılmaz. Testin sınırı: Türkçe harf içermeyen
+  Türkçe metin ("Oyun bitti") yakalanamaz, gözden geçirmede bakılır.
+- **İstisnalar** (geliştirici raporları, arayüz değil): `tools/bench.py` (hız raporu) ve `tools/design_calcs.py`
+  (MODEL.md Ek A'dan alıntılarla eşleşir; alıntı, denetlediği satırın yanında kalmalı).
+- Font: **Noto Sans** (SIL OFL 1.1) arayüz metni, **Noto Sans Mono** sayısal katman (F1) için. `assets/fonts/`
+  altında projeye dahildir; lisans `assets/fonts/OFL.txt`. Dosyalar notofonts.github.io deposunun `d3abdda`
+  commit'indeki `fonts/<Aile>/hinted/ttf/` klasöründen, lisans latin-greek-cyrillic deposunun `0ef9480`
+  commit'inden indirildi (2026-10-25). Config: `render.font`, `render.font_mono`.
+
+  | Dosya | Rol | SHA-256 |
+  |---|---|---|
+  | `NotoSans-Regular.ttf` | arayüz | `478c558ea716033cd60c03438f628dfa75694dcf6b5f6d505a2f05fd2b4f3823` |
+  | `NotoSansMono-Regular.ttf` | sayısal | `65b5e2b2c4a1fba9ae8be1f026cb35b03dcb8886d9b2a4147054fde12f7e767d` |
+  | `OFL.txt` | lisans | `cee9892f9f0cc8fe882c9e9537ee6a89621d86ee7ceaf70b02e2b2b1c25c061a` |
+
+- **Glif testi** (`tests/render/test_fonts.py`, Faz 1 kabul kriteri): ğ Ğ ş Ş ı İ ç Ç ö Ö ü Ü iki fontta da
+  vardır ve `ı`≠`i`, `İ`≠`I` farklı çizilir. Pencerede çizilen her stringin her karakteri Noto Sans'ta vardır.
+  Kontrol `pygame.freetype` ile yapılır, çünkü `pygame.font` eksik glif yerine sessizce kutu çizer. Noto Sans'ta
+  ok (← →) ve `≥` yoktur; arayüz metninde kullanılmaz. Terminale yazılan taktik mod metinleri (`TACTICAL_`
+  önekli) font kullanmadığından bu kontrolün dışındadır.
 - Ondalık ayırıcı virgül (`0,6 sn`).
 
 ## 8. Kademe 2 — Görsel cila (Faz 1.5)

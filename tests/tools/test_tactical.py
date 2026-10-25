@@ -15,14 +15,15 @@ import pytest
 from engine.actions import Ability, Actions, Aim, DonkeyAction, ShrekAction, ShrekMove
 from engine.config import load_config
 from engine.donkey import Bag
-from engine.events import ProjectileKind, Role
+from engine.events import ProjectileKind, Role, Side
 from engine.evolve import evolve
 from engine.items import Item, ItemStatus, Projectile
 from engine.observe import observe
 from engine.stones import TempStone
+from render.strings_tr import TACTICAL_GAME_OVER as GAME_OVER
+from render.strings_tr import TACTICAL_HELP as HELP
+from render.strings_tr import SIDE_NAMES, TACTICAL_DAM_IDLE, TACTICAL_DAM_LOCKED, TACTICAL_READY, TACTICAL_READY_NEXT_TICK
 from tools.tactical import (
-    GAME_OVER,
-    HELP,
     InputError,
     donkey_keys,
     parse_donkey,
@@ -175,6 +176,21 @@ def test_hidden_values_do_not_reach_the_screen():
     other = evolve(state, world=evolve(state.world, seed=99),
                    projectiles=(evolve(state.projectiles[0], landing=(0.0, 0.0)),))
     assert render(observe(other, Role.DONKEY), ()) == render(observe(state, Role.DONKEY), ())
+
+
+@pytest.mark.parametrize("since, ready", [(0, False), (-1, True)])
+def test_the_stance_says_whether_it_catches_yet(since, ready):
+    # D-08: taken in tick 0 it catches from tick 1 on; at t = 0 it is ready only if taken earlier.
+    state, _ = set_up(SMALL, ROWS, HEIGHTS, donkey={"stance": Side.LEFT, "stance_since": since})
+    text = render(observe(state, Role.DONKEY), ())
+    assert SIDE_NAMES[Side.LEFT] + (TACTICAL_READY if ready else TACTICAL_READY_NEXT_TICK) in text
+
+
+@pytest.mark.parametrize("locked", [False, True])
+def test_a_burst_dam_shows_its_lock(locked):
+    state, _ = set_up(SMALL, ROWS, HEIGHTS, dam={"burst_lock": locked})
+    text = render(observe(state, Role.DONKEY), ())
+    assert TACTICAL_DAM_IDLE in text and (TACTICAL_DAM_LOCKED in text) is locked
 
 
 def test_the_last_ticks_events_are_listed():

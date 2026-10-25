@@ -6,11 +6,10 @@ from pathlib import Path
 
 import pygame
 
-from engine.config import CONFIG_DIR, Config
+from engine.config import Config
 from engine.events import Role
+from render import PROJECT_ROOT
 from render.characters.animator import Look
-
-PROJECT_ROOT = CONFIG_DIR.parent  # pose file paths in the config are relative to it
 
 # VISUALS §9.4 fallback shapes, as shares of the shape's width w (structural, not model numbers)
 SHREK_CORNER = 0.25                  # corner radius of Shrek's square, × min(w, h)

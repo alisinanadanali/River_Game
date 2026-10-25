@@ -10,25 +10,31 @@ import argparse
 
 import pygame
 
+from engine.config import load_config
+from engine.events import Role
+from render.fonts import load_font
+from render.strings_tr import (
+    GHOSTING_DONE,
+    GHOSTING_HELD,
+    GHOSTING_HINT,
+    GHOSTING_RELEASE,
+    GHOSTING_TITLE,
+    ROLE_NAMES,
+)
 from tools.ghosting import COMBOS, LAYOUTS, HoldTracker, Result, combo_scancodes, evaluate, load_keymaps, results_table
 
 WINDOW_PX = (960, 540)
 FPS = 60
 GREEN, RED, GREY, WHITE, BG = (60, 170, 90), (200, 70, 60), (90, 90, 100), (235, 235, 235), (25, 25, 32)
 
-# UI strings (Turkish, ADR-007). Move to the strings module once render/ exists.
-TITLE = "Ghosting testi"
-HINT = "Tuşları çubuk dolana kadar basılı tut  ·  F2: başarısız  ·  Esc: çık"
-RELEASE = "Tüm tuşları bırak…"
-DONE = "Bitti. Sonuç tablosu terminalde."
-HELD = "Basılı scancode'lar:"
+FONT_PX, BIG_FONT_PX = 20, 30  # Noto Sans (VISUALS §7)
 
 
 def key_labels(combo, keymaps, layout):
     """(label, scancode) per required key, for display."""
     shrek = keymaps[LAYOUTS[layout]]
-    return [(f"Eşek {a}", keymaps["donkey"][a]) for a in combo.donkey] + [
-        (f"Shrek {a}", shrek[a]) for a in combo.shrek
+    return [(f"{ROLE_NAMES[Role.DONKEY]} {a}", keymaps["donkey"][a]) for a in combo.donkey] + [
+        (f"{ROLE_NAMES[Role.SHREK]} {a}", shrek[a]) for a in combo.shrek
     ]
 
 
@@ -40,8 +46,9 @@ def main() -> None:
     keymaps = load_keymaps()
     pygame.init()
     screen = pygame.display.set_mode(WINDOW_PX)
-    pygame.display.set_caption(f"{TITLE} ({layout})")
-    font, big = pygame.font.Font(None, 30), pygame.font.Font(None, 44)
+    pygame.display.set_caption(f"{GHOSTING_TITLE} ({layout})")
+    cfg = load_config()
+    font, big = load_font(cfg, FONT_PX), load_font(cfg, BIG_FONT_PX)
     clock = pygame.time.Clock()
 
     held: set[int] = set()
@@ -86,7 +93,7 @@ def main() -> None:
 
         screen.fill(BG)
         if index >= len(COMBOS):
-            screen.blit(big.render(DONE, True, WHITE), (40, 40))
+            screen.blit(big.render(GHOSTING_DONE, True, WHITE), (40, 40))
         else:
             combo = COMBOS[index]
             screen.blit(big.render(f"{index + 1}/{len(COMBOS)}  {combo.id}", True, WHITE), (40, 30))
@@ -102,10 +109,10 @@ def main() -> None:
             filled.width = int(bar.width * tracker.progress(now))
             pygame.draw.rect(screen, GREEN, filled, border_radius=6)
             if not armed:
-                screen.blit(font.render(RELEASE, True, WHITE), (40, 295))
+                screen.blit(font.render(GHOSTING_RELEASE, True, WHITE), (40, 295))
         held_text = ", ".join(f"{c} {names.get(c, '')}" for c in sorted(held))
-        screen.blit(font.render(f"{HELD} {held_text}", True, WHITE), (40, 440))
-        screen.blit(font.render(HINT, True, GREY), (40, 490))
+        screen.blit(font.render(f"{GHOSTING_HELD} {held_text}", True, WHITE), (40, 440))
+        screen.blit(font.render(GHOSTING_HINT, True, GREY), (40, 490))
         pygame.display.flip()
         clock.tick(FPS)
 

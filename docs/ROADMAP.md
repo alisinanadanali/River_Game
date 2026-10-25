@@ -55,7 +55,7 @@ başlığı, EVENTS.md) ve bir test ikisinin eşitliğini korur. Bu etiketten so
 
 **Kabul kriterleri**
 - İki oyuncu aynı klavyede 3 dakikalık oyunu baştan sona oynayabiliyor; üç yetenek çalışıyor.
-- Türkçe karakter testi (ğ ş ı İ ç ö ü) ekranda doğru.
+- Türkçe karakter testi (ğ ş ı İ ç ö ü) ekranda doğru (`tests/render/test_fonts.py`, VISUALS §7).
 - Renk skalası deuteranopi/protanopi simülasyonunda ayırt edilebilir (desenler dahil).
 - 60 FPS'te kare düşmesi yok (9×9 harita).
 - **İlk oyun testi**: ≥ 5 oyun, her profil ≥ 1 kez. Not alınacaklar: skor, can kaybı, "anlaşılmayan an"lar.

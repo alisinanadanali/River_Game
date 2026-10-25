@@ -4,6 +4,9 @@ Expected scancodes are written out by hand from the CONTROLS.md §1/§2 tables,
 not read from config: the doc is the oracle, config and code must agree with it.
 """
 
+import re
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -20,6 +23,7 @@ from tools.ghosting import (
 )
 
 DEFAULT_YAML = CONFIG_DIR / "default.yaml"
+CONTROLS = Path(__file__).resolve().parents[2] / "docs" / "CONTROLS.md"
 
 # CONTROLS.md §6, in table order. Values: SDL scancodes from §1 (default) and §2 (alt).
 EXPECTED = {
@@ -39,6 +43,12 @@ def keymaps():
 
 def test_combo_list_matches_controls_doc():
     assert [c.id for c in COMBOS] == list(EXPECTED)
+
+
+def test_reasons_are_the_controls_doc_column():
+    section = re.search(r"^## 6\..*?(?=^## )", CONTROLS.read_text(encoding="utf-8"), re.M | re.S)[0]
+    column = [m[1] for m in re.finditer(r"^\| [^|]+ \| ([^|]+?) \| [☑☐] \|", section, re.M)]  # "Neden kritik"
+    assert [c.reason for c in COMBOS] == column
 
 
 @pytest.mark.parametrize("combo", COMBOS, ids=lambda c: c.id)
