@@ -146,7 +146,6 @@ def yaml_snippet(cfg: Config, role: Role) -> str:
 BACKGROUND, TEXT, DIM, CROSS = (25, 25, 32), (235, 235, 235), (150, 150, 160), (255, 255, 255)
 FONT_PX = 20
 LINE_PX = 26
-STONE_SHADE = 0.6     # the stone's front face is its top colour × this (VISUALS §2 prism)
 FRONT_TILES = 1.0     # front face height, × tile_h
 CROSS_PX = 10
 
@@ -220,7 +219,7 @@ def _draw_frame(pygame, screen, state: PreviewState, sprites: dict, font, now_s:
         top.center = (round(fx), round(fy))
         stone = pygame.Color(palette.dry)
         front = pygame.Rect(top.left, top.bottom, top.width, round(layout.tile_h_px * FRONT_TILES))
-        pygame.draw.rect(screen, [round(c * STONE_SHADE) for c in stone[:3]], front)
+        pygame.draw.rect(screen, [round(c * layout.front_shade) for c in stone[:3]], front)  # VISUALS §2 prism
         pygame.draw.rect(screen, stone, top)
         clip, elapsed = shown_clip(state, role, now_s)
         look = Look(clip, pose(clip, elapsed, cfg), state.facing_right)

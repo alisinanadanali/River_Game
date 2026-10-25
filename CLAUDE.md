@@ -93,4 +93,6 @@ clock with at most one real-time tick a frame and the backlog dropped, F1/Esc/F2
 actions + events; nothing imports `game/`, `tests/game/test_game_imports.py`); 1.4 done: walking skeleton — `main.py` (pygame
 shell, CONTROLS §7.1: events → `KeyDown`/`KeyUp`/`FocusLost`, `--seed`/`--profile`/`--frames`, tested on the dummy
 driver with a fake clock), `game/view.py` (pure: animators follow the ticks, `scene()`), `render/layout.py` (pure flat
-board, VISUALS §4.1), `render/scene.py` (pure texts), `render/draw.py` (≈ 535 µs/frame). Next 1.5 (oblique projection).
+board, VISUALS §4.1), `render/scene.py` (pure texts), `render/draw.py`; 1.5 done: oblique board (VISUALS §2: z on the engine's scale, `layout.z_room_cm`/`bank_z_cm`/
+`front_shade`; `render/board.py` pure heights, water polygons, prisms; rows drawn back to front with the characters;
+≈ 1 450 µs/frame). Next 1.6 (safety-margin colours + patterns, CVD test).

@@ -249,6 +249,9 @@ class LayoutConfig(StrictModel):
     tile_h_px: int
     px_per_cm: float
     water_alpha: float
+    z_room_cm: NonNegFloat                     # VISUALS §2: room above the board
+    bank_z_cm: float                           # the banks' drawn height (the model: always dry)
+    front_shade: Fraction                      # a front face's colour = its top's × this
 
 
 class PaletteConfig(StrictModel):

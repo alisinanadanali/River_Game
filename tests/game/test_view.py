@@ -2,6 +2,7 @@
 
 import dataclasses
 
+import numpy as np
 import pytest
 
 from controllers.keyboard import KeyDown, KeyUp
@@ -10,6 +11,7 @@ from engine.observe import observe
 from game.session import Mode, frame, start
 from game.view import follow, new_view, progress, scene
 from render.characters.animator import look, new_animator, update
+from render.board import stand_z
 from render.layout import feet
 from render.strings_tr import MODE_NAMES
 from tests.support import config_with
@@ -87,12 +89,52 @@ def test_characters_move_from_the_previous_cell_to_the_current_one():
     s, view = ticked(tap(D))
     before, after = s.previous.donkey, s.state.donkey
     assert (before.row, before.col) != (after.row, after.col)                  # D moved the donkey east
+    bank = CFG.render.layout.bank_z_cm
     for u in (0.0, 0.5, 1.0):
         at = dataclasses.replace(s, since_tick_s=u * TICK_S)
         cell = (before.row + u * (after.row - before.row), before.col + u * (after.col - before.col))
-        assert scene(view, at, TICK_S).feet[Role.DONKEY] == pytest.approx(feet(CFG, Role.DONKEY, cell))
+        assert scene(view, at, TICK_S).feet[Role.DONKEY] == pytest.approx(feet(CFG, Role.DONKEY, cell, bank))
     shrek = s.state.shrek
-    assert scene(view, s, TICK_S).feet[Role.SHREK] == feet(CFG, Role.SHREK, (-1, shrek.col))
+    assert scene(view, s, TICK_S).feet[Role.SHREK] == feet(CFG, Role.SHREK, (-1, shrek.col), bank)
+
+
+def onto_a_stone():
+    """A session whose last tick took the donkey from the south bank onto the first stone of row 0."""
+    s = start(CFG, SEED, 0.0)
+    col = next(c for c in range(CFG.map.cols) if s.state.world.is_stone[0, c])
+    state = dataclasses.replace(s.state, donkey=dataclasses.replace(s.state.donkey, row=0, col=col))
+    return dataclasses.replace(s, state=state), col
+
+
+def test_the_feet_rise_from_the_bank_top_to_the_stone_top_between_ticks():
+    s, col = onto_a_stone()
+    view = new_view(s, 0.0)
+    z_bank, z_stone = stand_z(observe(s.previous, Role.DONKEY), -1, s.previous.donkey.col),         stand_z(observe(s.state, Role.DONKEY), 0, col)
+    assert z_bank != z_stone
+    for u in (0.0, 0.5, 1.0):
+        at = dataclasses.replace(s, since_tick_s=u * TICK_S)
+        cell = (-1 + u, s.previous.donkey.col + u * (col - s.previous.donkey.col))
+        expected = feet(CFG, Role.DONKEY, cell, z_bank + u * (z_stone - z_bank))
+        assert scene(view, at, 0.0).feet[Role.DONKEY] == pytest.approx(expected)
+
+
+def test_a_character_between_rows_is_drawn_with_the_southern_one():
+    s, _ = onto_a_stone()
+    sc = scene(new_view(s, 0.0), dataclasses.replace(s, since_tick_s=TICK_S / 2), 0.0)
+    assert (sc.rows[Role.DONKEY], sc.rows[Role.SHREK]) == (-1, -1)
+    later = dataclasses.replace(s, previous=s.state)
+    assert scene(new_view(s, 0.0), later, 0.0).rows[Role.DONKEY] == 0
+
+
+def test_the_water_level_moves_between_ticks():
+    s = start(CFG, SEED, 0.0)
+    high = np.arange(CFG.map.cols, dtype=float) * 4.0
+    s = dataclasses.replace(s, state=dataclasses.replace(s.state, water=dataclasses.replace(s.state.water,
+                                                                                             level=high)))
+    low = s.previous.water.level
+    for u in (0.0, 0.25, 1.0):
+        sc = scene(new_view(s, 0.0), dataclasses.replace(s, since_tick_s=u * TICK_S), 0.0)
+        assert sc.levels == pytest.approx(tuple(low + u * (high - low)))
 
 
 # --- the scene ---------------------------------------------------------------------------------------------------

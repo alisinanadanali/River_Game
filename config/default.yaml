@@ -136,6 +136,9 @@ render:
     tile_h_px: 48
     px_per_cm: 1.6
     water_alpha: 0.55
+    z_room_cm: 60              # tahtanın üstünde bırakılan pay (VISUALS §2); ≥ 0
+    bank_z_cm: 25              # kıyı üst yüzünün çizim yüksekliği; model kıyıyı hep kuru sayar
+    front_shade: 0.6           # taş/kıyı ön yüzü = üst yüz rengi × bu; [0, 1]
   font: assets/fonts/NotoSans-Regular.ttf
   font_mono: assets/fonts/NotoSansMono-Regular.ttf
   palette:                     # Okabe–Ito (VISUALS.md §3)

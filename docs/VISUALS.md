@@ -23,12 +23,28 @@ y_ekran = y0 + (R − 1 − r) · tile_h − z · px_per_cm
 
 - `tile_w = 80 px`, `tile_h = 48 px` (zemin kısalması 0,6), `px_per_cm = 1,6`. Bu değerler `render.layout`
   config'indedir.
-- Taş: üst yüzü `z = e_i` (ya da boşken `h_i + r_i`) yüksekliğinde bir dikdörtgen, ön yüzü su seviyesine kadar
-  uzanan daha koyu bir şerit (prizma). Üst yüzün su çizgisine göre konumu güvenlik payını doğrudan gösterir.
-- Su: her sütunda `z = L(c,t)` yüksekliğinde yarı saydam (alfa ≈ 0,55) bir düzlem. Sütunlar arası doğrusal
-  geçiş, dalga profilini görünür kılar. Hafif dalgalanma animasyonu yalnız Kademe 1'in sinüs ofsetidir.
-- Çizim sırası: kuzeyden güneye (arkadan öne) satır satır; her hücrede taş → su → yük/eşek.
-- Kıyılar: kuzey ve güney kenarında tam genişlikte koyu toprak şeritleri.
+- **z'nin referansı** motorunkiyle aynıdır: cm, OU ortalaması μ'ye göre (M-03 taş yükseklikleri ve `L` bu
+  ölçektedir; z negatif olabilir). `(x0, y0)` satır R − 1'in (en kuzey nehir satırı) z = 0'daki sol üst köşesidir.
+- **Dikey pay:** tahta (R nehir satırı + iki kıyı) harita alanında (§4) ortalanır; üstünde
+  `layout.z_room_cm · px_per_cm` px boşluk bırakılır, en kuzey satırın yükselen taşı ve suyu ekrana sığsın diye.
+  Daha yüksek z'ler üst şeridin altında kalır. Her profil için tahtanın payıyla harita alanına sığdığı test edilir.
+- **Kıyılar:** kuzey ve güney kenarında tam genişlikte koyu toprak şeritleri (`palette.bank`); üst yüzleri
+  `z = layout.bank_z_cm`'de, ön yüzleri z = 0'a kadar iner. Model kıyıyı her zaman kuru sayar (D-04); yükseklik
+  yalnız çizim içindir.
+- **Taş:** üst yüzü hücre büyüklüğünde, `z` yüksekliğinde bir dikdörtgen. Eşeğin durduğu taşta `z = e_i` (o anki
+  yükle, D-01); boş kalıcı taşta `h_i + r_i`, boş geçici taşta `h(t)`. Üst yüz su seviyesinin üstündeyse ön yüzü,
+  hücrenin güney kenarından su seviyesine (`z = L(c)`) inen, üst yüz renginin `layout.front_shade` katı koyu bir
+  şerittir (prizma). Üst yüz suyun altındaysa ön yüz çizilmez; su, üst yüzün üstüne yarı saydam çizilir. Üst
+  yüzün su çizgisine göre konumu güvenlik payını doğrudan gösterir.
+- **Su:** her nehir hücresinde yarı saydam (`layout.water_alpha`) bir şerit. Yüksekliği sütun ortasında `L(c)`,
+  hücrenin batı/doğu kenarında komşu sütunla ortalaması (sütunlar arası doğrusal geçiş, dalga profilini görünür
+  kılar); tahtanın iki ucunda düzdür. Hücrenin üstünde bir taş varsa ve üst yüzü suyun üstündeyse o hücrede su
+  görünmez (taş hücreyi doldurur). Tick'ler arasında `L` önceki ve şimdiki tick arasında doğrusal geçer.
+  Hafif dalgalanma animasyonu (sinüs ofseti) Faz 1.5 cilasına bırakıldı (§8): derinlik okumayı bozmasın.
+- **Çizim sırası:** kuzeyden güneye (arkadan öne) satır satır, satırda batıdan doğuya; her hücrede taş → su.
+  Karakter, iki hücre arasındaysa güneydekinin satırıyla birlikte, o satırın hücrelerinden sonra çizilir; böylece
+  önündeki (güneydeki) satırlar onu örter. Nişan çerçevesi ve uçan yük gölgesi en son, hücrenin görünen yüzeyinde
+  (taşın üst yüzü ya da su, hangisi yüksekse; kıyıda kıyının üst yüzü) çizilir.
 
 ## 3. Renk skalası: güvenlik payı
 
@@ -71,19 +87,22 @@ bir **desenle** ayırt edilir, renk tek kanal değildir.
 
 Her rolün paneli klavyede o rolün elinin olduğu tarafta durur: Eşek solda, Shrek sağda.
 
-### 4.1 Yürüyen iskelet (Faz 1.4)
+### 4.1 Yürüyen iskelet (Faz 1.4) ve tahta (Faz 1.5)
 
 Faz 1'in ilk oynanabilir penceresi; sonraki adımlar her parçayı yerine koyar (1.5 eğik izdüşüm, 1.6 renk skalası,
-1.7 karakterlerin yüksekliği, 1.8 HUD). İskelet yalnız gözlem okur (`observe`, ADR-005).
+1.7 karakterlerin su çizgisinde kırpılması ve hayalet, 1.8 HUD). Çizim yalnız gözlem okur (`observe`, ADR-005).
 
-- **Düz izdüşüm:** §2'nin formülü `z = 0` ile. Hücre `(r, c)`'nin ortası
-  `x = x0 + (c + ½) · tile_w`, `y = y0 + (R − r + ½) · tile_h`; satır −1 (güney kıyı) en altta, satır R (kuzey
-  kıyı) en üstte. `R + 2` satır × `C` sütunluk tahta harita alanının (§4: üst/alt şerit ve iki panel dışında
-  kalan alan) ortasındadır.
-- **Hücreler:** kıyılar `palette.bank`, taşlar (kalıcı ve geçici) `palette.dry`, su `palette.water`.
-- **Karakterler:** ayakları hücre ortasında; Shrek güney kıyı hücresinin güney kenarında (eşek de başlangıçta
-  güney kıyıdadır, ikisi üst üste binmez). Konum tick'ler arasında önceki ve şimdiki hücre arasında doğrusal
-  geçer (`u = since_tick_s / tick_seconds`, [0, 1]'e kırpılır). Klipler §9.3'teki gibi tick olaylarından.
+- **İzdüşüm** (Faz 1.5'ten beri §2'nin tamamı): hücre `(r, c)`'nin z yüksekliğindeki ortası
+  `x = x0 + (c + ½) · tile_w`, `y = y0 + (R − 1 − r + ½) · tile_h − z · px_per_cm`; satır −1 (güney kıyı) en
+  altta, satır R (kuzey kıyı) en üstte. Tahta, payıyla birlikte, harita alanının (§4: üst/alt şerit ve iki panel
+  dışında kalan alan) ortasındadır.
+- **Hücreler:** kıyılar `palette.bank`, taşlar (kalıcı ve geçici) `palette.dry` (1.6'da güvenlik payı renkleri),
+  su `palette.water`, §2'deki gibi.
+- **Karakterler:** ayakları durdukları yüzeyde, hücre ortasında: kıyıda `bank_z_cm`, taşta §2'nin üst yüz z'si, taşı olmayan hücrede (ör. geçici taş
+  altında kaybolunca) su yüzeyi `L(c)`.
+  Shrek güney kıyı hücresinin güney kenarında (eşek de başlangıçta güney kıyıdadır, ikisi üst üste binmez).
+  Konum ve ayak yüksekliği tick'ler arasında önceki ve şimdiki değer arasında doğrusal geçer
+  (`u = since_tick_s / tick_seconds`, [0, 1]'e kırpılır). Klipler §9.3'teki gibi tick olaylarından.
 - **Nişan:** Shrek'in sütununda `aim_row` hücresinin çerçevesi; uçan yük hedef hücresinde küçük bir gölge (§5,
   iniş noktası gösterilmez).
 - **Üst şerit:** kalan süre, skor, can, mod; duraklatmada ve oyun sonunda ortada bir satır.
@@ -162,6 +181,7 @@ Faz 1'in ilk oynanabilir penceresi; sonraki adımlar her parçayı yerine koyar 
 - Çevre tileset'i: nehir, taşlar, kıyılar (CC0, ör. Kenney) ya da Aseprite / LibreSprite / Piskel ile piksel çizim;
   alternatif olarak kodla prosedürel çizim.
 - Yük ikonları (elma kasası, patates çuvalı, karpuz).
+- Suyun hafif dalgalanması (sinüs ofseti; §2'den buraya alındı).
 - "Juice": su sıçrama parçacıkları, sürüklenmede kısa ekran sarsıntısı, yakalamada küçük ölçek animasyonu.
 - Ses: CC0 kütüphaneleri ve sfxr türü üreteçler (atış, yakalama, sıçrama, dalga uğultusu, baraj gıcırtısı).
 - Karakterler bu kademenin işi değildir: §9'da, Kademe 1'de çizilirler. Cila karakterlere yalnız "juice"

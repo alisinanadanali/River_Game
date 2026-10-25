@@ -15,7 +15,7 @@ RENDER_DIR = ROOT / "render"
 
 ALLOWED = frozenset(sys.stdlib_module_names) | {"numpy", "pygame", "engine", "render"}  # not controllers/tools/…
 PURE = ("render/interpolation.py", "render/characters/pose.py", "render/characters/animator.py", "render/layout.py",
-        "render/scene.py")
+        "render/scene.py", "render/board.py")
 NOT_IN_PURE = frozenset({"pygame", "time", "datetime"})  # no window, no wall clock: time is an argument
 
 

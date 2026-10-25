@@ -20,7 +20,9 @@ SECONDS_DECIMALS = 6  # the time left is rounded here before counting whole seco
 @dataclass(frozen=True)
 class Scene:
     obs: Observation
+    levels: tuple[float, ...]                  # L(c), cm, interpolated between ticks
     feet: Mapping[Role, tuple[float, float]]   # px, interpolated between ticks
+    rows: Mapping[Role, int]                   # the row each character is drawn with (VISUALS §2 order)
     looks: Mapping[Role, Look]
     mode: str                                  # game.session.Mode value (render does not import game, ADR-005)
     paused: bool
