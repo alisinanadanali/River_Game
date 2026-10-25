@@ -194,6 +194,16 @@ def test_the_hud_is_drawn_when_the_scene_has_one(assets):
     assert at(drawn(assets, with_hud), centre) == pygame.Color(PALETTE.danger)
 
 
+def test_the_bottom_bar_shows_the_feed(assets):
+    sc = a_scene(an_obs({}))
+    w, h = CFG.render.window_px
+    strip = [(x, y) for x in range(0, w, 2) for y in range(h - LAY.bottom_bar_px, h)]
+    quiet = drawn(assets, sc)
+    assert all(quiet.get_at(p) == pygame.Color(PALETTE.background) for p in strip)
+    speaking = drawn(assets, dataclasses.replace(sc, feed=("Eşek sürüklendi!", "Can gitti, 2 kaldı")))
+    assert any(speaking.get_at(p) != pygame.Color(PALETTE.background) for p in strip)
+
+
 def test_drawing_reads_nothing_but_the_scene(assets):
     """The same scene twice gives the same pixels: no hidden state between frames."""
     sc = a_scene(an_obs({(5, 1): 15.0}))

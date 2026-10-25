@@ -46,6 +46,7 @@ class Scene:
     water_y: float | None = None               # px: the donkey's water line (§9.1); None: not cropped
     ghost: Ghost | None = None
     hud: "Hud | None" = None                   # VISUALS §5; None: not drawn
+    feed: tuple[str, ...] = ()                 # the bottom bar's event lines, newest first (VISUALS §5)
 
 
 def seconds_left(obs: Observation) -> int:

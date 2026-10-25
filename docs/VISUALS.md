@@ -184,6 +184,36 @@ etiketi.
   `hud.blink_hz` ile yanıp söner (yarım periyot açık, yarım kapalı; duvar saatiyle). Tutulurken salınım genliği
   tahmini `A = Q / (s·√(2π))` (W-05, motorun `wave_volume`'u).
 
+**Alt şerit: olay akışı** (`render/feed.py`, saf). Oyuncuya bir şey söyleyen olaylar kısa bir Türkçe satır olur;
+en yenisi solda, aralarında " · ", şeride sığdığı kadar. Bir satır `hud.feed_seconds` saniye görünür, en çok
+`hud.feed_max` satır tutulur. Satırlar görünümde (`game/view.py`) tick'lerin olaylarından eklenir; yeniden
+başlatmada (F5) akış boşalır. Yük adı `ITEM_NAMES`'ten. Aşağıdaki tablo `tests/render/test_feed.py`'nin kâhinidir:
+satırı olan olaylar ile sessiz olanların birleşimi motorun olay kataloğunun tamamıdır.
+
+| Olay | Satır |
+|---|---|
+| `ItemArrived` | `Elma kasası kıyıya geldi` |
+| `ItemThrown` | yalnız teslimde (S-06): `Elma kasası teslim ediliyor` |
+| `ItemCaught` | `Eşek Elma kasası yakaladı (sol heybe)` |
+| `ItemMissed` | `Elma kasası ıskalandı: duruş yok` (neden: duruş yok, duruş geç, uzağa düştü, eşek kıyıda) |
+| `ItemBounced` | `Elma kasası sol heybeye sığmadı` |
+| `ItemReturnedToBank` | `Elma kasası kıyıya döndü` |
+| `ItemDropped` | `Elma kasası düştü: kayma` (neden: diz boyu su, kayma, sürüklenme) |
+| `ItemLost` | `Elma kasası kayboldu: battı` (neden: kıyı dolu, battı, akıntıya kapıldı, harita dışına düştü) |
+| `ItemDelivered` | `Elma kasası teslim edildi, +1` |
+| `DonkeySlipped` | `Eşek kaydı (sol)` |
+| `DonkeySwept` | `Eşek sürüklendi!` |
+| `LifeLost` | `Can gitti, 2 kaldı` |
+| `DamReleased` | `Baraj bırakıldı: 27 cm dalga`; patlamada `Baraj patladı: 40 cm dalga` |
+| `WaveSpawned` | yalnız yukarıdan gelen (W-02): `Yukarıdan 12 cm dalga geliyor` (barajınkini `DamReleased` söyler) |
+| `TempStoneVanished` | `Geçici taş battı` |
+| `ActionRejected` | `Shrek: bekleme sürüyor` (neden: bekleme sürüyor, baraj tutulurken olmaz, kuyruk boş, geçici taş sınırı dolu, orada taş yok, eşek suda yürüyor, baraj kilitli) |
+
+Sessiz (başka yerde görünür ya da satır gerektirmez): `GameOver` (bant), `WaveAbsorbed`, `WaveExited`,
+`ShrekMoved`, `ShrekAimed`, `DonkeyMoveStarted`, `DonkeyMoved`, `DonkeyStance`, `DonkeyDepthChanged` (panel),
+`DonkeyRespawned`, `DamStarted`, `TempStoneSpawned`, `TempStoneRaised`, `ItemFloated`, `ItemSank` (ardından
+kayıp satırı gelir).
+
 **Harita üstü** (Faz 1.9, katmanlar):
 - **Nişan imleci:** Shrek'in sütununda, `aim_row` hücresinde çerçeve.
 - **Belirsizlik halkası:** hedefte 1σ ve 2σ çemberleri (σ sıradaki yükün kütlesiyle). Ayrıca eşeğin

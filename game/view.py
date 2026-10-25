@@ -1,7 +1,7 @@
 """VISUALS §4.1, §9.3: the view, drawing's state between frames, and the scene a frame draws. Pure, time passed in.
 
 After each frame the view follows the session: every tick of the frame updates both animators with its events
-(several tactical ticks in one frame all see the frame's last observation). A restart (F5) starts a new view.
+and adds its lines to the event feed (several tactical ticks in one frame all see the frame's last observation). A restart (F5) starts a new view.
 """
 
 from collections.abc import Mapping
@@ -13,6 +13,7 @@ from game.session import Session
 from render.characters.animator import Animator, ghost_look, look, new_animator, update
 from render.interpolation import lerp, tick_progress
 from render.board import stand_z, stone_top_z
+from render.feed import line
 from render.hud import hud
 from render.layout import feet, water_line
 from render.scene import Ghost, Scene
@@ -22,6 +23,7 @@ from render.scene import Ghost, Scene
 class View:
     animators: Mapping[Role, Animator]
     restarts: int                      # the session's restarts this view belongs to
+    feed: tuple[tuple[float, str], ...] = ()   # (wall clock s, line), newest first (VISUALS §5)
 
 
 def new_view(session: Session, now_s: float) -> View:
@@ -40,7 +42,10 @@ def follow(view: View, session: Session, now_s: float) -> View:
         obs = observe(session.state, role)
         for record in session.ticks:
             animators[role] = update(animators[role], obs, record.events, now_s, session.config)
-    return View(animators, view.restarts)
+    obs = observe(session.state, Role.DONKEY)                               # V0: one view
+    said = [(now_s, text) for record in session.ticks for e in record.events if (text := line(e, obs)) is not None]
+    feed = (tuple(reversed(said)) + view.feed)[:session.config.render.hud.feed_max]
+    return View(animators, view.restarts, feed)
 
 
 def progress(session: Session) -> float:
@@ -80,6 +85,7 @@ def scene(view: View, session: Session, now_s: float) -> Scene:
         water_y=water_line(cfg, feet_at[Role.DONKEY][1], da + u * (db - da)),
         ghost=_ghost(view.animators[Role.DONKEY], now, levels, now_s),
         hud=hud(now, session.mode.value, now_s),
+        feed=tuple(text for at_s, text in view.feed if now_s - at_s < cfg.render.hud.feed_seconds),
     )
 
 

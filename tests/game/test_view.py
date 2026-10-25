@@ -9,7 +9,10 @@ from controllers.keyboard import KeyDown, KeyUp
 from engine.events import DonkeySwept, GameOverReason, Role, SweptCause
 from engine.water import Dam
 from engine.observe import observe
-from game.session import Mode, frame, start
+from engine.actions import Actions
+from engine.events import LifeLost, TempStoneVanished
+from game.session import Mode, TickRecord, frame, start
+from render.feed import line
 from game.view import follow, new_view, progress, scene
 from render.characters.animator import ghost_look, look, new_animator, update
 from render.characters.pose import Clip, duration_s
@@ -287,3 +290,53 @@ def test_the_scene_shows_the_end_of_the_game():
     s, view = ticked()
     s = dataclasses.replace(s, state=dataclasses.replace(s.state, game_over=GameOverReason.TIME))
     assert scene(view, s, TICK_S).obs.game_over is GameOverReason.TIME
+
+
+# --- the event feed (VISUALS §5) ---------------------------------------------------------------------------------
+
+FEED = CFG.render.hud
+
+
+def with_ticks(s, *event_lists):
+    return dataclasses.replace(s, ticks=tuple(TickRecord(Actions(), tuple(events)) for events in event_lists))
+
+
+def test_the_feed_gets_every_ticks_lines_newest_first():
+    s = start(CFG, SEED, 0.0)
+    lost, gone = LifeLost(t=0, seq=0, lives_left=2), TempStoneVanished(t=1, seq=0, stone_id=0, row=1, col=1,
+                                                                        under_donkey=False)
+    view = follow(new_view(s, 0.0), with_ticks(s, [lost], [gone]), 2.0)
+    obs = observe(s.state, Role.DONKEY)
+    assert view.feed == ((2.0, line(gone, obs)), (2.0, line(lost, obs)))
+
+
+def test_a_later_frames_lines_go_before_the_earlier_ones():
+    s = start(CFG, SEED, 0.0)
+    first, second = LifeLost(t=0, seq=0, lives_left=2), LifeLost(t=1, seq=0, lives_left=1)
+    view = follow(new_view(s, 0.0), with_ticks(s, [first]), 1.0)
+    view = follow(view, with_ticks(s, [second]), 2.0)
+    obs = observe(s.state, Role.DONKEY)
+    assert view.feed == ((2.0, line(second, obs)), (1.0, line(first, obs)))
+
+
+def test_the_feed_keeps_the_newest_lines_only():
+    s = start(CFG, SEED, 0.0)
+    many = [LifeLost(t=0, seq=i, lives_left=i) for i in range(FEED.feed_max + 2)]
+    view = follow(new_view(s, 0.0), with_ticks(s, many), 1.0)
+    obs = observe(s.state, Role.DONKEY)
+    assert [text for _, text in view.feed] == [line(e, obs) for e in reversed(many)][:FEED.feed_max]
+
+
+def test_the_scene_shows_the_lines_younger_than_feed_seconds():
+    s = start(CFG, SEED, 0.0)
+    view = follow(new_view(s, 0.0), with_ticks(s, [LifeLost(t=0, seq=0, lives_left=2)]), 1.0)
+    text = view.feed[0][1]
+    assert scene(view, s, 1.0 + FEED.feed_seconds - 0.01).feed == (text,)
+    assert scene(view, s, 1.0 + FEED.feed_seconds).feed == ()
+
+
+def test_a_restart_empties_the_feed():
+    s = start(CFG, SEED, 0.0)
+    view = follow(new_view(s, 0.0), with_ticks(s, [LifeLost(t=0, seq=0, lives_left=2)]), 1.0)
+    restarted = dataclasses.replace(s, restarts=1)
+    assert follow(view, restarted, 1.1).feed == ()

@@ -82,6 +82,34 @@ HUD_DAM_VOLUME = "Q {volume:.0f}/{q_max:g}"
 HUD_DAM_WAVE = "dalga {amplitude:.0f} cm"
 HUD_DAM_IDLE = "tutulmuyor"
 
+# The bottom bar's event feed (VISUALS §5); reasons in the enums' order
+FEED_ARRIVED = "{item} kıyıya geldi"
+FEED_HANDOFF = "{item} teslim ediliyor"
+FEED_CAUGHT = "Eşek {item} yakaladı ({side} heybe)"
+FEED_MISSED = "{item} ıskalandı: {reason}"
+FEED_BOUNCED = "{item} {side} heybeye sığmadı"
+FEED_RETURNED = "{item} kıyıya döndü"
+FEED_DROPPED = "{item} düştü: {reason}"
+FEED_LOST = "{item} kayboldu: {reason}"
+FEED_DELIVERED = "{item} teslim edildi, +{points}"
+FEED_SLIPPED = "Eşek kaydı ({side})"
+FEED_SWEPT = "Eşek sürüklendi!"
+FEED_LIFE_LOST = "Can gitti, {lives} kaldı"
+FEED_DAM_RELEASED = "Baraj bırakıldı: {amplitude:.0f} cm dalga"
+FEED_DAM_BURST = "Baraj patladı: {amplitude:.0f} cm dalga"
+FEED_WAVE = "Yukarıdan {amplitude:.0f} cm dalga geliyor"
+FEED_STONE_VANISHED = "Geçici taş battı"
+FEED_REJECTED = "{role}: {reason}"
+FEED_JOIN = "  ·  "
+MISS_REASONS = {"no_stance": "duruş yok", "stance_too_late": "duruş geç", "out_of_radius": "uzağa düştü",
+                "donkey_on_bank": "eşek kıyıda"}
+DROP_CAUSES = {"knee": "diz boyu su", "slip": "kayma", "swept": "sürüklenme"}
+LOST_REASONS = {"bank_overflow": "kıyı dolu", "sank": "battı", "drifted_off": "akıntıya kapıldı",
+                "off_map": "harita dışına düştü"}
+REJECT_REASONS = {"cooldown": "bekleme sürüyor", "dam_active": "baraj tutulurken olmaz", "queue_empty": "kuyruk boş",
+                  "rock_limit": "geçici taş sınırı dolu", "no_stone": "orada taş yok", "busy_moving": "eşek suda yürüyor",
+                  "burst_lock": "baraj kilitli"}
+
 # tools/character_preview.py (VISUALS §9.5)
 PREVIEW_TITLE = "Karakter önizleme"
 PREVIEW_AUTO = "otomatik"

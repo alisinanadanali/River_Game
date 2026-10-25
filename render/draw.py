@@ -3,7 +3,7 @@
 Order (§2): the background; the rows from the north bank to the south bank, each row's stones (top face in its
 safety-margin colour with its pattern and marks, front face) then its water, then the swept donkey's ghost and
 the characters drawn with that row, the donkey cut at its water line (§9.1); on top, the shadows of flying items and
-the aim frame (Shrek's sprite reaches over the first river rows), the top bar, the HUD (§5) and the banner.
+the aim frame (Shrek's sprite reaches over the first river rows), the top bar, the HUD and the event feed (§5) and the banner.
 """
 
 import math
@@ -23,6 +23,7 @@ from render.layout import Rect, board_rect, cell_center, cell_rect, rows_back_to
 from render.panels import draw_hud
 from render.patterns import LINE_PX, draw_pattern
 from render.scene import Scene, banner, top_bar
+from render.strings_tr import FEED_JOIN
 
 FONT_PX = 20
 AIM_FRAME_PX = 3          # the aim frame's line width
@@ -77,6 +78,11 @@ def draw_scene(screen: pygame.Surface, assets: Assets, scene: Scene) -> None:
     screen.blit(text, (TEXT_MARGIN_PX, (lay.top_bar_px - text.get_height()) // 2))
     if scene.hud is not None:
         draw_hud(screen, assets.hud_font, scene.hud, cfg)
+    if scene.feed:
+        text = assets.hud_font.render(FEED_JOIN.join(scene.feed), True, palette.text)
+        top = cfg.render.window_px[1] - lay.bottom_bar_px
+        screen.blit(text, (TEXT_MARGIN_PX, top + (lay.bottom_bar_px - text.get_height()) // 2),
+                    pygame.Rect(0, 0, cfg.render.window_px[0] - 2 * TEXT_MARGIN_PX, lay.bottom_bar_px))
     line = banner(scene)
     if line is not None:
         text = assets.font.render(line, True, palette.text, palette.background)

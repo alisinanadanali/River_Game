@@ -101,4 +101,8 @@ CVD simulation + CIE76 ΔE ≥ 10 in `tests/render/test_colour.py`; under water 
 temporary-stone marks; `uv run python -m tools.cvd_shots` → `runs/cvd/`; ≈ 1 780 µs/frame); 1.7 done: characters in the
 water (VISUALS §4.1: `layout.water_line`, the donkey cut `d · px_per_cm` above its feet with `d` interpolated, a dry
 stone's `d < 0` kept; a swept donkey (a life less) does not slide back; `scene.Ghost` on the swept cell, drawn with
-its row). Next 1.8 (HUD).
+its row); 1.8 done: HUD (VISUALS §5, §7): `strings_tr.tr`/`decimal` write the decimal comma (AST test: no
+fractional f-string or `.format` outside them; the bench too), `render/hud.py` (pure numbers; engine `slip_risk`
+D-03 and `is_handoff` S-06 shared with the stage code; catch chance checked against MODEL A.3), `render/hud_layout.py`
+(pure rectangles), `render/panels.py`, `render/patterns.py`, `render/feed.py` (event feed; VISUALS' table is the
+oracle), config `render.hud`; ≈ 2 540 µs/frame. Next 1.9 (overlays on the map + the no-leak test).

@@ -259,6 +259,8 @@ class HudConfig(StrictModel):
 
     warn_share: Annotated[float, Field(gt=0, le=1)]    # bank queue (above) and dam (reaching) warnings
     blink_hz: PosFloat                                 # the dam warning's blinking
+    feed_seconds: PosFloat                             # an event line's life in the bottom bar
+    feed_max: PosInt                                   # lines kept
     slip_prob_tiers: tuple[float, float, float]        # balance bar: p_slip below each → DRY, ANKLE, KNEE colour
 
     @model_validator(mode="after")
