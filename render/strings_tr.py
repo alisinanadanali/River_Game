@@ -55,6 +55,33 @@ CLIP_NAMES = {  # VISUALS §9.2
     Clip.SWEPT: "sürüklenme",
 }
 
+# The game window's HUD panels (VISUALS §5)
+HUD_BALANCE = "Denge"
+HUD_SLIP = "kayma %{p:.1f}"
+HUD_MOSSY = "  yosun ×{multiplier:g}"
+HUD_BAGS = "Heybeler"
+HUD_BAG_MASS = "{mass:g}/{mass_max:g} kg"
+HUD_DEPTH = "Derinlik"
+HUD_DEPTH_CM = "{name}  d = {depth:.1f} cm"
+HUD_STANCE = "Duruş"
+HUD_STANCE_LEFT = "{seconds:.1f} sn"
+HUD_NO_STANCE = "yok"
+HUD_STANCE_NONE = "{stance}: {none}"
+HUD_QUEUE = "Kıyı {queued}/{capacity}"
+HUD_NEXT = "Sıradaki"
+HUD_NEXT_ITEM = "{name}, {mass:g} kg, {volume} hacim"
+HUD_NEXT_THROW = "σ = {sigma:.2f} hücre, yakalama %{p:.0f}"
+HUD_NEXT_HANDOFF = "teslim (σ = 0)"
+HUD_QUEUE_EMPTY = "kuyruk boş"
+HUD_COOLDOWNS = "Bekleme"
+HUD_THROW = "Fırlat"
+HUD_ROCK = "Kaya"
+HUD_ROCKS = "geçici taş {active}/{max}"
+HUD_DAM = "Baraj"
+HUD_DAM_VOLUME = "Q {volume:.0f}/{q_max:g}"
+HUD_DAM_WAVE = "dalga {amplitude:.0f} cm"
+HUD_DAM_IDLE = "tutulmuyor"
+
 # tools/character_preview.py (VISUALS §9.5)
 PREVIEW_TITLE = "Karakter önizleme"
 PREVIEW_AUTO = "otomatik"

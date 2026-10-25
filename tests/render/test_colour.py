@@ -31,7 +31,7 @@ from render.colour import (  # noqa: E402
     to_linear,
     to_srgb,
 )
-from render.draw import MARK_STROKE_PX, draw_pattern  # noqa: E402
+from render.patterns import MARK_STROKE_PX, draw_pattern  # noqa: E402
 
 CFG = load_config()
 PALETTE, LAY = CFG.render.palette, CFG.render.layout

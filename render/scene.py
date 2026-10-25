@@ -8,10 +8,14 @@ the mode, the pause and the seed.
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from engine.events import Role
 from engine.observe import Observation
 from render.characters.animator import Look
+
+if TYPE_CHECKING:  # render.hud imports this module (seconds_left)
+    from render.hud import Hud
 from render.strings_tr import CAPTION, GAME_OVER_BANNER, GAME_OVER_REASONS, MODE_NAMES, PAUSED_BANNER, TOP_BAR
 
 SECONDS_DECIMALS = 6  # the time left is rounded here before counting whole seconds up: 5 · 0.6 s is 3.0000000000000004
@@ -41,6 +45,7 @@ class Scene:
     seed: int
     water_y: float | None = None               # px: the donkey's water line (§9.1); None: not cropped
     ghost: Ghost | None = None
+    hud: "Hud | None" = None                   # VISUALS §5; None: not drawn
 
 
 def seconds_left(obs: Observation) -> int:

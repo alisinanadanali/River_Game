@@ -23,6 +23,9 @@ from render.characters.animator import Look  # noqa: E402
 from render.characters.pose import Clip, pose  # noqa: E402
 from render.characters.sprites import load_character  # noqa: E402
 from render.draw import FONT_PX, LIFE_BAR_MARGIN_PX, LIFE_BAR_PX, Assets, draw_scene  # noqa: E402
+from render.hud import hud  # noqa: E402
+from render.hud_layout import FONT_PX as HUD_FONT_PX  # noqa: E402
+from render.hud_layout import top_rects  # noqa: E402
 from render.fonts import load_font  # noqa: E402
 from render.layout import board_rect, cell_center, cell_rect, feet, map_area  # noqa: E402
 from render.scene import Ghost, Scene  # noqa: E402
@@ -38,7 +41,8 @@ TOLERANCE = 2  # per channel: SDL's alpha blending rounds
 def assets():
     pygame.init()
     no_images = Path(__file__).parent / "no_such_dir"
-    yield Assets(load_font(CFG, FONT_PX), {role: load_character(role, CFG, root=no_images) for role in Role})
+    yield Assets(load_font(CFG, FONT_PX), load_font(CFG, HUD_FONT_PX),
+                 {role: load_character(role, CFG, root=no_images) for role in Role})
     pygame.quit()
 
 
@@ -179,6 +183,15 @@ def test_the_top_bar_has_text_and_the_pause_shows_a_banner(assets):
     background = pygame.Color(PALETTE.background)
     assert any(playing.get_at((x, y)) != background for x in range(bar.width) for y in range(bar.height))
     assert pygame.image.tobytes(playing, "RGB") != pygame.image.tobytes(paused, "RGB")
+
+
+def test_the_hud_is_drawn_when_the_scene_has_one(assets):
+    sc = a_scene(an_obs({}))
+    x, y, w, h = top_rects(CFG).hearts[0]
+    centre = (x + w / 2, y + h / 2)
+    assert at(drawn(assets, sc), centre) == pygame.Color(PALETTE.background)
+    with_hud = dataclasses.replace(sc, hud=hud(sc.obs, sc.mode, 0.0))
+    assert at(drawn(assets, with_hud), centre) == pygame.Color(PALETTE.danger)
 
 
 def test_drawing_reads_nothing_but_the_scene(assets):

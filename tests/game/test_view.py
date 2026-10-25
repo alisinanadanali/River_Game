@@ -7,12 +7,14 @@ import pytest
 
 from controllers.keyboard import KeyDown, KeyUp
 from engine.events import DonkeySwept, GameOverReason, Role, SweptCause
+from engine.water import Dam
 from engine.observe import observe
 from game.session import Mode, frame, start
 from game.view import follow, new_view, progress, scene
 from render.characters.animator import ghost_look, look, new_animator, update
 from render.characters.pose import Clip, duration_s
 from render.board import stand_z, stone_top_z
+from render.hud import hud
 from render.layout import feet, water_line
 from render.strings_tr import MODE_NAMES
 from tests.support import config_with
@@ -259,6 +261,22 @@ def test_the_scene_has_the_observation_the_looks_and_the_status():
     s = frame(s, tap(F2, ESC), TICK_S + 0.2)
     sc = scene(follow(view, s, TICK_S + 0.2), s, TICK_S + 0.2)
     assert (sc.mode, sc.paused) == (Mode.TACTICAL.value, True)
+
+
+def test_the_scene_carries_the_hud_of_the_current_observation():
+    s, view = ticked()
+    sc = scene(view, s, TICK_S + 0.1)
+    assert sc.hud == hud(observe(s.state, Role.DONKEY), Mode.REALTIME.value, TICK_S + 0.1)
+
+
+def test_the_hud_blinks_on_the_frames_clock():
+    """VISUALS §5: the dam warning blinks with the wall clock, so the scene passes the frame's time to the HUD."""
+    s = start(CFG, SEED, 0.0)
+    held = Dam(active=True, col=4, volume=CFG.dam.q_max_cm_cols, started_at=0)
+    s = dataclasses.replace(s, state=dataclasses.replace(s.state, dam=held))
+    period = 1 / CFG.render.hud.blink_hz
+    lit = [scene(new_view(s, 0.0), s, k * period).hud.shrek.dam.flash_on for k in (0.1, 0.6)]
+    assert lit == [True, False]
 
 
 def test_every_mode_has_a_name():

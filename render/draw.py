@@ -3,7 +3,7 @@
 Order (§2): the background; the rows from the north bank to the south bank, each row's stones (top face in its
 safety-margin colour with its pattern and marks, front face) then its water, then the swept donkey's ghost and
 the characters drawn with that row, the donkey cut at its water line (§9.1); on top, the shadows of flying items and
-the aim frame (Shrek's sprite reaches over the first river rows), the top bar and the banner.
+the aim frame (Shrek's sprite reaches over the first river rows), the top bar, the HUD (§5) and the banner.
 """
 
 import math
@@ -12,13 +12,16 @@ from dataclasses import dataclass
 import pygame
 
 from engine.config import Config
-from engine.events import DepthState, Role
+from engine.events import Role
 from engine.stones import temp_at
 from render.board import front_face, is_bank, life_share, stone_top_z, surface_z, tier_of, water_polygon
 from render.characters.sprites import CharacterSprites, draw, load_character
 from render.colour import tier_colour
 from render.fonts import load_font
+from render.hud_layout import FONT_PX as HUD_FONT_PX
 from render.layout import Rect, board_rect, cell_center, cell_rect, rows_back_to_front
+from render.panels import draw_hud
+from render.patterns import LINE_PX, draw_pattern
 from render.scene import Scene, banner, top_bar
 
 FONT_PX = 20
@@ -26,16 +29,7 @@ AIM_FRAME_PX = 3          # the aim frame's line width
 SHADOW_SHARE = 0.25       # a flying item's shadow: an ellipse this share of the tile, on its target cell
 TEXT_MARGIN_PX = 12       # the top bar's text from the window's left edge
 OPAQUE = 255
-# VISUALS §3 patterns and marks, in px on a top face (structural shapes, not model numbers)
-DOT_STEP_PX = 16          # BİLEK: one dot every this many px each way
-DOT_RADIUS_PX = 2
-LINE_STEP_PX = 12         # DİZ, TEHLİKE: diagonal lines this far apart
-LINE_PX = 2
-MARK_SHARE = 0.6          # TEHLİKE "!": this share of the face's height
-MARK_BAR_SHARE = 0.65     # the bar's share of the "!"
-MARK_STROKE_PX = 4
-MARK_PATCH_PX = 12        # the base-colour patch under the "!"
-MARK_PAD_PX = 2
+# VISUALS §3 marks, in px on a top face (structural shapes, not model numbers; the patterns: render/patterns.py)
 CONTOUR_PX = 2            # mossy and temporary stones' contours
 MOSS_TOP_PX, MOSS_LEFT_PX, MOSS_GAP_PX = 8, 8, 6
 MOSS_WAVE_PX, MOSS_AMPLITUDE_PX = 16, 2   # "≈": one sine period over this width
@@ -50,11 +44,13 @@ CHARACTER_ORDER = (Role.SHREK, Role.DONKEY)   # in one row the donkey is in fron
 @dataclass(frozen=True)
 class Assets:
     font: pygame.font.Font
+    hud_font: pygame.font.Font
     sprites: dict[Role, CharacterSprites]
 
 
 def load_assets(cfg: Config) -> Assets:
-    return Assets(load_font(cfg, FONT_PX), {role: load_character(role, cfg) for role in Role})
+    return Assets(load_font(cfg, FONT_PX), load_font(cfg, HUD_FONT_PX),
+                  {role: load_character(role, cfg) for role in Role})
 
 
 def draw_scene(screen: pygame.Surface, assets: Assets, scene: Scene) -> None:
@@ -79,6 +75,8 @@ def draw_scene(screen: pygame.Surface, assets: Assets, scene: Scene) -> None:
                      AIM_FRAME_PX)
     text = assets.font.render(top_bar(scene), True, palette.text)
     screen.blit(text, (TEXT_MARGIN_PX, (lay.top_bar_px - text.get_height()) // 2))
+    if scene.hud is not None:
+        draw_hud(screen, assets.hud_font, scene.hud, cfg)
     line = banner(scene)
     if line is not None:
         text = assets.font.render(line, True, palette.text, palette.background)
@@ -129,47 +127,6 @@ def _prism(screen: pygame.Surface, cfg: Config, r: int, c: int, top_z: float, le
         shade = cfg.render.layout.front_shade
         screen.fill([round(v * shade) for v in colour[:3]], _rect(front))
     screen.fill(colour, _rect(cell_rect(cfg, r, c, top_z)))
-
-
-def draw_pattern(surface: pygame.Surface, rect: pygame.Rect, tier: DepthState, base, ink) -> None:
-    """§3: the tier's pattern on a top face, denser with the danger: none, sparse dots, diagonal lines, a lattice
-    with "!" (drawn on a patch of the base colour so it reads over the lattice)."""
-    old = surface.get_clip()
-    surface.set_clip(rect.clip(old))
-    try:
-        if tier is DepthState.ANKLE:
-            for x in range(rect.left + DOT_STEP_PX // 2, rect.right, DOT_STEP_PX):
-                for y in range(rect.top + DOT_STEP_PX // 2, rect.bottom, DOT_STEP_PX):
-                    pygame.draw.circle(surface, ink, (x, y), DOT_RADIUS_PX)
-        elif tier in (DepthState.KNEE, DepthState.SWEPT):
-            _diagonals(surface, rect, ink, rising=True)
-            if tier is DepthState.SWEPT:
-                _diagonals(surface, rect, ink, rising=False)
-                _exclamation(surface, rect, base, ink)
-    finally:
-        surface.set_clip(old)
-
-
-def _diagonals(surface: pygame.Surface, rect: pygame.Rect, ink, rising: bool) -> None:
-    h = rect.height
-    for k in range(-h, rect.width + h, LINE_STEP_PX):
-        x0 = rect.left + k
-        start, end = ((x0, rect.bottom), (x0 + h, rect.top)) if rising else ((x0, rect.top), (x0 + h, rect.bottom))
-        pygame.draw.line(surface, ink, start, end, LINE_PX)
-
-
-def _exclamation(surface: pygame.Surface, rect: pygame.Rect, base, ink) -> None:
-    """A "!" in the face's centre: a bar and a dot, on a patch of the base colour."""
-    h = rect.height * MARK_SHARE
-    patch = pygame.Rect(0, 0, MARK_PATCH_PX, round(h) + 2 * MARK_PAD_PX)
-    patch.center = rect.center
-    surface.fill(base, patch)
-    bar = pygame.Rect(0, 0, MARK_STROKE_PX, round(h * MARK_BAR_SHARE))
-    bar.midtop = (patch.centerx, patch.top + MARK_PAD_PX)
-    dot = pygame.Rect(0, 0, MARK_STROKE_PX, MARK_STROKE_PX)
-    dot.midbottom = (patch.centerx, patch.bottom - MARK_PAD_PX)
-    surface.fill(ink, bar)
-    surface.fill(ink, dot)
 
 
 def _moss(surface: pygame.Surface, face: pygame.Rect, ink) -> None:

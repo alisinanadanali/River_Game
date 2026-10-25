@@ -142,6 +142,13 @@ pygame yok) ve onu çizen `render/draw.py`. Model `game/view.py`'de kurulur ve S
 sayı ya gözlemden ya config'den gelir, kuralı motorun fonksiyonuyla hesaplanır (ör. D-02 `balance`, S-04
 `throw_sigma`); HUD kuralı kendisi yeniden yazmaz. Eşikler `render.hud`'dadır. Kesirli sayılar virgüllüdür (§7).
 
+Yerleşim saf `render/hud_layout.py`'dedir (her öğenin dikdörtgeni; boşluklar adlandırılmış px sabitleri), çizim
+`render/panels.py`'de. Test: her profilde her öğe kendi panelinin içindedir ve öğeler üst üste binmez. Renkler:
+denge çubuğu kademe rengi; heybe kareleri `palette.bank`, en üst yük `palette.text` çerçeveli, karede türün baş
+harfi (`ITEM_NAMES`); kütle ve süre çubukları `palette.text`; kıyı yuvaları `palette.bank`, uyarıda
+`palette.danger`; bekleme kadranında **hazır olan pay** `palette.dry` (dolu daire = hazır); baraj çubuğu
+`palette.water`, yanıp sönerken `palette.danger`; kalpler dolu `palette.danger`, kaybedilen yalnız çerçeve.
+
 **Üst şerit (ortak):** kalan süre (sn, §4.1'deki gibi yukarı yuvarlanmış) ve dolum çubuğu
 (`(game_length_ticks − t) / game_length_ticks`), skor, `time.lives` kalp (kalan can dolu, kaybedilen boş), mod
 etiketi.
@@ -152,7 +159,7 @@ etiketi.
   dışına çıkamaz (varsayılanla ≈ 0,23). Gösterge rengi **bir sonraki hareketteki** p_slip'e göre (D-03, motorun
   `slip_risk`'i: kıyıda ve boş heybeyle 0): `hud.slip_prob_tiers = [p₁, p₂, p₃]` için p < p₁ KURU, p < p₂
   BİLEK, p < p₃ DİZ, aksi hâlde TEHLİKE rengi (§3 paleti). Altında `%p` yazılır. Yosunlu taştayken
-  "≈ ×μ" işareti (`mossy_slip_multiplier`).
+  "yosun ×μ" (`mossy_slip_multiplier`).
 - **Heybeler:** sol ve sağ iki dikey kap. Her kapta `bag_max_volume_per_side` hacim karesi alttan üste dolar:
   her yük hacmi kadar kare kaplar (D-09 yığını, alttaki ilk giren); **en üst yük** (kayınca ya da DİZ'de önce
   düşen, D-03, D-06) açık renk çerçeveyle belirgindir. Yanında kütle çubuğu

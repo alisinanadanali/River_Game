@@ -13,6 +13,7 @@ from game.session import Session
 from render.characters.animator import Animator, ghost_look, look, new_animator, update
 from render.interpolation import lerp, tick_progress
 from render.board import stand_z, stone_top_z
+from render.hud import hud
 from render.layout import feet, water_line
 from render.scene import Ghost, Scene
 
@@ -49,8 +50,8 @@ def progress(session: Session) -> float:
 
 def scene(view: View, session: Session, now_s: float) -> Scene:
     """VISUALS §4.1: the observation, the water levels and the characters' feet between the previous and the current
-    tick (cell and height), the rows they are drawn with, their looks, the donkey's water line, the ghost and the
-    status. A swept donkey (a life less) is on the bank at once: it does not slide back across the river."""
+    tick (cell and height), the rows they are drawn with, their looks, the donkey's water line, the ghost, the
+    HUD (§5) and the status. A swept donkey (a life less) is on the bank at once: it does not slide back across the river."""
     cfg, u = session.config, progress(session)
     before, now = observe(session.previous, Role.DONKEY), observe(session.state, Role.DONKEY)  # V0: one view
     swept = now.donkey.lives < before.donkey.lives
@@ -78,6 +79,7 @@ def scene(view: View, session: Session, now_s: float) -> Scene:
         seed=session.seed,
         water_y=water_line(cfg, feet_at[Role.DONKEY][1], da + u * (db - da)),
         ghost=_ghost(view.animators[Role.DONKEY], now, levels, now_s),
+        hud=hud(now, session.mode.value, now_s),
     )
 
 
