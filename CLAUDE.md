@@ -90,4 +90,7 @@ buffer, CONTROLS §4.1: scancode events in, `tick_actions` at the boundary; no p
 confirm, CONTROLS §5.2: Shrek selects move/aim, an ability or the wait key confirms; a confirmation is
 final); 1.3 done: `game/session.py` (pure loop state, CONTROLS §7: `frame(session, key_events, now_s)`, fixed-step
 clock with at most one real-time tick a frame and the backlog dropped, F1/Esc/F2/F5, game over; `ticks` records
-actions + events; nothing imports `game/`, `tests/game/test_game_imports.py`). Next 1.4 (walking skeleton `main.py`).
+actions + events; nothing imports `game/`, `tests/game/test_game_imports.py`); 1.4 done: walking skeleton — `main.py` (pygame
+shell, CONTROLS §7.1: events → `KeyDown`/`KeyUp`/`FocusLost`, `--seed`/`--profile`/`--frames`, tested on the dummy
+driver with a fake clock), `game/view.py` (pure: animators follow the ticks, `scene()`), `render/layout.py` (pure flat
+board, VISUALS §4.1), `render/scene.py` (pure texts), `render/draw.py` (≈ 535 µs/frame). Next 1.5 (oblique projection).

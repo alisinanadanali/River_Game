@@ -214,6 +214,29 @@ duraklatılmamışsa tick ilerler. Genel tuşlar oturumundur, rollerin girdi tam
   eylemleri buradan alır. Aynı seed ve aynı eylemlerle motor aynı durumu verir (INV-02); test bunu oturumun
   kaydettiği eylemlerle denetler.
 
+### 7.1 Pencere kabuğu (Faz 1.4, `main.py`)
+
+Kabuk pygame ile oturum arasındaki ince katmandır; kural içermez. Her karede:
+
+1. Saat okunur (`time.perf_counter`, sn); kare zamanı bu değerdir.
+2. pygame olayları sırasıyla çevrilir:
+
+   | pygame olayı | Oturuma giden | Not |
+   |---|---|---|
+   | `KEYDOWN` | `KeyDown(event.scancode)` | tuş tekrarı kapalı: SDL'nin yinelediği basışlar oturuma göre zaten basış değildir (§4.1) |
+   | `KEYUP` | `KeyUp(event.scancode)` | |
+   | `WINDOWFOCUSLOST` | `FocusLost()` | basılı tuşlar sıfırlanır (§4.1) |
+   | `QUIT` (pencere kapatma) | — | döngü biter; Esc duraklatmadır, çıkış değildir (§3) |
+   | diğerleri | — | yok sayılır |
+
+3. `frame(session, olaylar, now_s)` (§7); karenin tick'leri görünümü (animasyonları) günceller.
+4. Kare çizilir (VISUALS §4.1), ekrana verilir, `clock.tick(render.fps)` kare hızını sınırlar.
+
+Komut satırı: `uv run python main.py [--seed N] [--profile P]`. `--seed` verilmezse rastgele bir seed seçilir;
+seed pencere başlığında yazar, aynı oyun `--seed` ile tekrar açılabilir. `--frames N` N kare sonra çıkar (test
+ve ölçüm için). Testler kabuğu SDL'nin `dummy` sürücüsüyle, sahte saatle ve kuyruğa konan pygame olaylarıyla
+koşar (`tests/test_main.py`).
+
 ## 8. Gamepad (kapsam dışı, mimari hazır)
 
 Gamepad, `controllers/gamepad.py` olarak yeni bir controller eklenerek desteklenir. Motor, render ve config

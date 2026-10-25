@@ -10,7 +10,7 @@ from tests.imports import imported_modules
 
 ROOT = Path(__file__).resolve().parents[2]
 ALLOWED = frozenset(sys.stdlib_module_names) | {"numpy", "pygame", "engine", "controllers", "render", "game"}
-PURE = ("game/session.py",)
+PURE = ("game/session.py", "game/view.py")
 NOT_IN_PURE = frozenset({"pygame", "time", "datetime"})
 INNER = ("engine", "render", "controllers", "tools", "envs", "logs")
 

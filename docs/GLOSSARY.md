@@ -101,6 +101,8 @@ eklenir, sonra kodda ve arayüzde kullanılır. Birim sütunu ADR-008'e uyar: y�
 | Onay (taktik) | `confirm` | Rolün o tick'teki eylemini kesinleştiren basış (CONTROLS §5.2) |
 | Oturum | `Session` | Bir oyunun döngü durumu: motor durumu, mod, duraklatma, saat, girdiler (CONTROLS §7) |
 | Duraklatma | `paused` | Esc ile; tick ilerlemez, süre sayılmaz |
+| Kabuk | `main.py` | pygame olaylarını ve saati oturuma veren, kareyi çizen ince katman (CONTROLS §7.1) |
+| Görünüm | `View` | Çizimin kareler arası durumu: karakter animatörleri (`game/view.py`) |
 | Hata ayıklama katmanı | `debug_overlay` | F1 ile açılan sayısal katman |
 | RNG akışı | `rng stream` | `rng_world`, `rng_water`, `rng_items`, `rng_throw`, `rng_slip` |
 | Kural kimliği | `rule id` | MODEL.md'deki M-, W-, D-, S-, I-, R- önekli kimlik |

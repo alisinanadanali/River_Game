@@ -144,6 +144,9 @@ render:
     knee: "#E69F00"
     danger: "#D55E00"
     water: "#0072B2"
+    background: "#19191F"      # pencere (VISUALS §4.1)
+    bank: "#5C4630"            # kıyı şeritleri
+    text: "#EBEBEB"            # yazı, nişan çerçevesi
   debug_overlay: false
   forecast_ticks: 5            # hata ayıklama dalga tahmini ufku
   characters:                  # VISUALS §9, ADR-012. Resimler yerel: assets/private/ git'e girmez

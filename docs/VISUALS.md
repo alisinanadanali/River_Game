@@ -71,6 +71,24 @@ bir **desenle** ayırt edilir, renk tek kanal değildir.
 
 Her rolün paneli klavyede o rolün elinin olduğu tarafta durur: Eşek solda, Shrek sağda.
 
+### 4.1 Yürüyen iskelet (Faz 1.4)
+
+Faz 1'in ilk oynanabilir penceresi; sonraki adımlar her parçayı yerine koyar (1.5 eğik izdüşüm, 1.6 renk skalası,
+1.7 karakterlerin yüksekliği, 1.8 HUD). İskelet yalnız gözlem okur (`observe`, ADR-005).
+
+- **Düz izdüşüm:** §2'nin formülü `z = 0` ile. Hücre `(r, c)`'nin ortası
+  `x = x0 + (c + ½) · tile_w`, `y = y0 + (R − r + ½) · tile_h`; satır −1 (güney kıyı) en altta, satır R (kuzey
+  kıyı) en üstte. `R + 2` satır × `C` sütunluk tahta harita alanının (§4: üst/alt şerit ve iki panel dışında
+  kalan alan) ortasındadır.
+- **Hücreler:** kıyılar `palette.bank`, taşlar (kalıcı ve geçici) `palette.dry`, su `palette.water`.
+- **Karakterler:** ayakları hücre ortasında; Shrek güney kıyı hücresinin güney kenarında (eşek de başlangıçta
+  güney kıyıdadır, ikisi üst üste binmez). Konum tick'ler arasında önceki ve şimdiki hücre arasında doğrusal
+  geçer (`u = since_tick_s / tick_seconds`, [0, 1]'e kırpılır). Klipler §9.3'teki gibi tick olaylarından.
+- **Nişan:** Shrek'in sütununda `aim_row` hücresinin çerçevesi; uçan yük hedef hücresinde küçük bir gölge (§5,
+  iniş noktası gösterilmez).
+- **Üst şerit:** kalan süre, skor, can, mod; duraklatmada ve oyun sonunda ortada bir satır.
+- Arayüz renkleri `render.palette`'te: `background` (pencere), `bank` (kıyı), `text` (yazı, nişan çerçevesi).
+
 ## 5. HUD öğeleri
 
 **Üst şerit (ortak):** kalan süre (sn ve dolum çubuğu), skor, can kalpleri, mod etiketi.

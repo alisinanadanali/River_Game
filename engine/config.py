@@ -257,6 +257,9 @@ class PaletteConfig(StrictModel):
     knee: HexColor
     danger: HexColor
     water: HexColor
+    background: HexColor                       # VISUALS §4.1: the window, the banks, text
+    bank: HexColor
+    text: HexColor
 
 
 class PoseImage(StrictModel):

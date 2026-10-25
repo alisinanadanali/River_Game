@@ -104,3 +104,14 @@ TACTICAL_NO_WAVES = "yok"
 TACTICAL_FLYING = "{name} → {target}, {ticks} tick"
 TACTICAL_AIRBORNE = "Uçan: {flying}   Yüzen: {floating}"
 TACTICAL_EVENTS = "Olaylar:"
+
+# The game window (main.py, VISUALS §4.1)
+CAPTION = "Nehir Geçidi · seed {seed}"
+MODE_NAMES = {"realtime": "Gerçek zamanlı", "tactical": "Taktik"}  # game.session.Mode values
+TOP_BAR = "Süre {seconds} sn  ·  Skor {score}  ·  Can {lives}  ·  Mod: {mode}"
+PAUSED_BANNER = "Duraklatıldı  ·  Esc: sürdür"
+GAME_OVER_BANNER = "Oyun bitti: {reason}  ·  Skor {score}  ·  F5: yeniden başla"
+MAIN_DESCRIPTION = "Nehir Geçidi: iki oyunculu nehir geçişi (aynı klavye)"
+MAIN_SEED_HELP = "harita ve olaylar için seed; verilmezse rastgele seçilir ve pencere başlığında yazar"
+MAIN_PROFILE_HELP = "config profili: warmup, percolation_edge, hard"
+MAIN_FRAMES_HELP = "bu kadar kare sonra çık (0: pencere kapanana kadar)"
