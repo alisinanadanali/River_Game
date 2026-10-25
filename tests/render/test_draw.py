@@ -25,7 +25,7 @@ from render.characters.sprites import load_character  # noqa: E402
 from render.draw import FONT_PX, LIFE_BAR_MARGIN_PX, LIFE_BAR_PX, Assets, draw_scene  # noqa: E402
 from render.fonts import load_font  # noqa: E402
 from render.layout import board_rect, cell_center, cell_rect, feet, map_area  # noqa: E402
-from render.scene import Scene  # noqa: E402
+from render.scene import Ghost, Scene  # noqa: E402
 from tests.render.boards import CFG, an_obs  # noqa: E402
 
 PALETTE, LAY = CFG.render.palette, CFG.render.layout
@@ -195,6 +195,61 @@ def test_water_has_no_seams_between_rows_and_stays_on_the_board(assets):
     assert all(close(at(screen, (x + w / 2, y + dy)), expected) for dy in (-1, 0, 1))   # row 6 | row 5 boundary
     bx, _, bw, _ = board_rect(CFG)
     assert at(screen, (bx + bw, cell_center(CFG, 5, 1)[1])) == pygame.Color(PALETTE.background)
+
+
+# --- the characters in the water (§4.1, §9.1, §9.3) ------------------------------------------------------------
+
+DONKEY_COLOUR = pygame.Color(CFG.render.characters.donkey.fallback_color)
+SHREK_COLOUR = pygame.Color(CFG.render.characters.shrek.fallback_color)
+DEPTH_CM = 6.0
+UNDER, OVER = 3, 20     # px above the feet: under the water line DEPTH_CM up, and over it (the shape is 44 px)
+
+
+def unseen(sc: Scene) -> Scene:
+    """The same scene with the donkey invisible: the board as it is under the donkey."""
+    invisible = Look(Clip.IDLE, dataclasses.replace(pose(Clip.IDLE, 0.0, CFG), alpha=0.0), True)
+    return dataclasses.replace(sc, looks={**sc.looks, Role.DONKEY: invisible})
+
+
+def test_the_donkey_is_not_drawn_under_its_water_line(assets):
+    sc = a_scene(an_obs({(5, 7): 0.0}, donkey_at=(5, 7), level=DEPTH_CM))
+    fx, fy = sc.feet[Role.DONKEY]
+    cropped = dataclasses.replace(sc, water_y=fy - DEPTH_CM * LAY.px_per_cm)
+    assert at(drawn(assets, sc), (fx, fy - UNDER)) == DONKEY_COLOUR                 # no line: all of it
+    screen = drawn(assets, cropped)
+    assert at(screen, (fx, fy - UNDER)) == at(drawn(assets, unseen(sc)), (fx, fy - UNDER)) != DONKEY_COLOUR
+    assert at(screen, (fx, fy - OVER)) == DONKEY_COLOUR
+
+
+def test_shrek_is_never_cropped(assets):
+    sc = a_scene(an_obs({}))
+    fx, fy = sc.feet[Role.SHREK]
+    assert at(drawn(assets, dataclasses.replace(sc, water_y=fy - OVER)), (fx, fy - UNDER)) == SHREK_COLOUR
+
+
+def a_ghost(r, c, top_z, water_y=None):
+    look = Look(Clip.SWEPT, pose(Clip.SWEPT, 0.0, CFG), True)                       # t = 0: in place, opaque
+    return Ghost(look, feet(CFG, Role.DONKEY, (r, c), top_z), r, water_y)
+
+
+def test_the_ghost_is_drawn_on_its_cell_and_cropped_at_the_water(assets):
+    sc = a_scene(an_obs({(5, 7): 0.0}, level=DEPTH_CM))
+    ghost = a_ghost(5, 7, 0.0)
+    fx, fy = ghost.feet
+    assert at(drawn(assets, sc), (fx, fy - OVER)) != DONKEY_COLOUR                   # no ghost, no donkey there
+    whole = drawn(assets, dataclasses.replace(sc, ghost=ghost))
+    assert at(whole, (fx, fy - UNDER)) == at(whole, (fx, fy - OVER)) == DONKEY_COLOUR
+    cropped = drawn(assets, dataclasses.replace(sc, ghost=dataclasses.replace(ghost, water_y=fy - DEPTH_CM * LAY.px_per_cm)))
+    assert at(cropped, (fx, fy - UNDER)) == at(drawn(assets, sc), (fx, fy - UNDER))
+    assert at(cropped, (fx, fy - OVER)) == DONKEY_COLOUR
+
+
+def test_the_ghost_is_drawn_with_its_row(assets):
+    """A tall stone in the row in front hides the ghost's feet, as it hides the donkey's."""
+    ghost = a_ghost(5, 7, 0.0)
+    fx, fy = ghost.feet
+    sc = a_scene(an_obs({(5, 7): 0.0, (4, 7): 20.0}))
+    assert at(drawn(assets, dataclasses.replace(sc, ghost=ghost)), (fx, fy - UNDER)) == pygame.Color(PALETTE.dry)
 
 
 # --- the safety margin (§3) --------------------------------------------------------------------------------------

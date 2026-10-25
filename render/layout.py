@@ -53,6 +53,14 @@ def feet(cfg: Config, role: Role, cell: tuple[float, float], z: float = 0.0) -> 
     return (x, y)
 
 
+
+def water_line(cfg: Config, feet_y: float, depth_cm: float | None) -> float | None:
+    """§9.1: the screen y of the water line over feet standing depth_cm under the water; None without water."""
+    if depth_cm is None or depth_cm <= 0:
+        return None
+    return feet_y - depth_cm * cfg.render.layout.px_per_cm
+
+
 def rows_back_to_front(cfg: Config) -> list[int]:
     """§2 drawing order: the north bank, the river from north to south, the south bank."""
     return list(range(cfg.map.rows, -BANK_ROWS, -1))

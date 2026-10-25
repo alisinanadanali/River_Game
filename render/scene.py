@@ -18,6 +18,16 @@ SECONDS_DECIMALS = 6  # the time left is rounded here before counting whole seco
 
 
 @dataclass(frozen=True)
+class Ghost:
+    """§4.1, §9.3: the swept donkey fading downstream on its old cell, drawn with that cell's row."""
+
+    look: Look
+    feet: tuple[float, float]                  # px
+    row: int
+    water_y: float | None                      # px: nothing drawn below (§9.1); None without water over the feet
+
+
+@dataclass(frozen=True)
 class Scene:
     obs: Observation
     before: Observation                        # the previous tick's (colours blend from it, §3)
@@ -29,6 +39,8 @@ class Scene:
     mode: str                                  # game.session.Mode value (render does not import game, ADR-005)
     paused: bool
     seed: int
+    water_y: float | None = None               # px: the donkey's water line (§9.1); None: not cropped
+    ghost: Ghost | None = None
 
 
 def seconds_left(obs: Observation) -> int:

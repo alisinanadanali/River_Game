@@ -120,6 +120,16 @@ Faz 1'in ilk oynanabilir penceresi; sonraki adımlar her parçayı yerine koyar 
   Shrek güney kıyı hücresinin güney kenarında (eşek de başlangıçta güney kıyıdadır, ikisi üst üste binmez).
   Konum ve ayak yüksekliği tick'ler arasında önceki ve şimdiki değer arasında doğrusal geçer
   (`u = since_tick_s / tick_seconds`, [0, 1]'e kırpılır). Klipler §9.3'teki gibi tick olaylarından.
+- **Su çizgisi** (Faz 1.7, §9.1): eşek, ayaklarının `d · px_per_cm` px üstündeki çizginin altında çizilmez.
+  `d`, gözlemin `donkey.depth`'idir (kıyıda `None`, 0 sayılır); tick'ler arasında önceki ve şimdiki `d` arasında
+  doğrusal geçer. Kuru taşın negatif `d`'si 0'a çekilmez: böylece aynı taşta çizgi tam çizilen suyun hizasındadır
+  (`d` çizilen su ile çizilen ayak yüksekliğinin farkıdır). `d ≤ 0` olunca kırpma yoktur. Shrek nehre girmez,
+  kırpılmaz.
+- **Sürüklenme:** canı azalmışsa (`before.donkey.lives > donkey.lives`, D-07) eşek tick'ler arasında eski
+  hücresinden kıyıya kaymaz: doğrudan kıyıdadır ve `RESPAWN` ile belirir. Eski hücresinde **hayalet** oynar
+  (§9.3): `SWEPT` klibi, ayakları o hücrenin çizilen taş üstünde (taş yoksa suda), çizilen su seviyesinde
+  kırpılır, o hücrenin satırıyla çizilir (önündeki satırların taşları onu örter). Kırpma çizgisi `dx` kaymasıyla
+  yer değiştirmez.
 - **Nişan:** Shrek'in sütununda `aim_row` hücresinin çerçevesi; uçan yük hedef hücresinde küçük bir gölge (§5,
   iniş noktası gösterilmez).
 - **Üst şerit:** kalan süre, skor, can, mod; duraklatmada ve oyun sonunda ortada bir satır.

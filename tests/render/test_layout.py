@@ -4,7 +4,7 @@ import pytest
 
 from engine.config import load_config
 from engine.events import Role
-from render.layout import board_rect, cell_center, cell_rect, feet, map_area, rows_back_to_front
+from render.layout import board_rect, cell_center, cell_rect, feet, map_area, rows_back_to_front, water_line
 
 PROFILES = [None, "warmup", "percolation_edge", "hard"]
 
@@ -75,3 +75,13 @@ def test_the_donkey_stands_in_the_middle_and_shrek_on_the_south_edge(cfg):
 
 def test_rows_are_drawn_from_the_north_bank_to_the_south_bank(cfg):
     assert rows_back_to_front(cfg) == list(range(cfg.map.rows, -2, -1))
+
+
+@pytest.mark.parametrize("depth", [None, 0.0, -3.0])
+def test_no_water_line_without_water_over_the_feet(cfg, depth):
+    assert water_line(cfg, 300.0, depth) is None
+
+
+def test_the_water_line_is_the_depth_above_the_feet(cfg):
+    """VISUALS §9.1: d · px_per_cm px above the feet, on §2's scale."""
+    assert water_line(cfg, 300.0, 5.0) == pytest.approx(300.0 - 5.0 * cfg.render.layout.px_per_cm)

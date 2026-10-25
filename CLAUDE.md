@@ -98,5 +98,7 @@ board, VISUALS §4.1), `render/scene.py` (pure texts), `render/draw.py`; 1.5 don
 `front_shade`; `render/board.py` pure heights, water polygons, prisms; rows drawn back to front with the characters;
 ≈ 1 450 µs/frame); 1.6 done: safety-margin colours + patterns (VISUALS §3: `render/colour.py` pure, Machado 2009
 CVD simulation + CIE76 ΔE ≥ 10 in `tests/render/test_colour.py`; under water the patterns carry the tiers; mossy and
-temporary-stone marks; `uv run python -m tools.cvd_shots` → `runs/cvd/`; ≈ 1 780 µs/frame). Next 1.7 (characters:
-crop at the water line, the swept ghost).
+temporary-stone marks; `uv run python -m tools.cvd_shots` → `runs/cvd/`; ≈ 1 780 µs/frame); 1.7 done: characters in the
+water (VISUALS §4.1: `layout.water_line`, the donkey cut `d · px_per_cm` above its feet with `d` interpolated, a dry
+stone's `d < 0` kept; a swept donkey (a life less) does not slide back; `scene.Ghost` on the swept cell, drawn with
+its row). Next 1.8 (HUD).

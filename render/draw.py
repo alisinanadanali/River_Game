@@ -1,8 +1,9 @@
 """VISUALS §2, §3, §4.1: the frame (pygame). It draws a Scene and nothing else.
 
 Order (§2): the background; the rows from the north bank to the south bank, each row's stones (top face in its
-safety-margin colour with its pattern and marks, front face) then its water, then the characters drawn with that row; on top, the shadows of flying items and the aim frame
-(Shrek's sprite reaches over the first river rows), the top bar and the banner.
+safety-margin colour with its pattern and marks, front face) then its water, then the swept donkey's ghost and
+the characters drawn with that row, the donkey cut at its water line (§9.1); on top, the shadows of flying items and
+the aim frame (Shrek's sprite reaches over the first river rows), the top bar and the banner.
 """
 
 import math
@@ -62,9 +63,13 @@ def draw_scene(screen: pygame.Surface, assets: Assets, scene: Scene) -> None:
     screen.fill(palette.background)
     for r in rows_back_to_front(cfg):
         _row(screen, scene, r)
+        ghost = scene.ghost
+        if ghost is not None and ghost.row == r:
+            draw(screen, assets.sprites[Role.DONKEY], ghost.look, ghost.feet, ghost.water_y)
         for role in CHARACTER_ORDER:
             if scene.rows[role] == r:
-                draw(screen, assets.sprites[role], scene.looks[role], scene.feet[role])
+                draw(screen, assets.sprites[role], scene.looks[role], scene.feet[role],
+                     scene.water_y if role is Role.DONKEY else None)
     for projectile in obs.projectiles:
         x, y = cell_center(cfg, *projectile.target, surface_z(obs, scene.levels, *projectile.target))
         w, h = lay.tile_w_px * SHADOW_SHARE * 2, lay.tile_h_px * SHADOW_SHARE * 2

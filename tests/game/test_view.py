@@ -6,13 +6,14 @@ import numpy as np
 import pytest
 
 from controllers.keyboard import KeyDown, KeyUp
-from engine.events import GameOverReason, Role
+from engine.events import DonkeySwept, GameOverReason, Role, SweptCause
 from engine.observe import observe
 from game.session import Mode, frame, start
 from game.view import follow, new_view, progress, scene
-from render.characters.animator import look, new_animator, update
-from render.board import stand_z
-from render.layout import feet
+from render.characters.animator import ghost_look, look, new_animator, update
+from render.characters.pose import Clip, duration_s
+from render.board import stand_z, stone_top_z
+from render.layout import feet, water_line
 from render.strings_tr import MODE_NAMES
 from tests.support import config_with
 
@@ -135,6 +136,114 @@ def test_the_water_level_moves_between_ticks():
     for u in (0.0, 0.25, 1.0):
         sc = scene(new_view(s, 0.0), dataclasses.replace(s, since_tick_s=u * TICK_S), 0.0)
         assert sc.levels == pytest.approx(tuple(low + u * (high - low)))
+
+
+# --- the water line and the sweep (§4.1, §9.1) ---------------------------------------------------------------
+
+def with_donkey(s, *, previous=None, state=None):
+    """The session with the donkey fields given replaced, in the previous and/or the current state."""
+    def put(game, fields):
+        return game if fields is None else dataclasses.replace(game, donkey=dataclasses.replace(game.donkey, **fields))
+    return dataclasses.replace(s, previous=put(s.previous, previous), state=put(s.state, state))
+
+
+def at_u(s, u):
+    return dataclasses.replace(s, since_tick_s=u * TICK_S)
+
+
+def test_on_the_bank_the_donkey_has_no_water_line():
+    s, view = ticked()
+    assert scene(view, s, TICK_S).water_y is None
+
+
+def test_the_water_line_follows_the_depth_between_ticks():
+    s, col = onto_a_stone()
+    s = with_donkey(s, previous=dict(row=0, col=col, depth=2.0), state=dict(depth=6.0))
+    view = new_view(s, 0.0)
+    for u in (0.0, 0.5, 1.0):
+        sc = scene(view, at_u(s, u), 0.0)
+        assert sc.water_y == pytest.approx(water_line(CFG, sc.feet[Role.DONKEY][1], 2.0 + u * 4.0))
+
+
+def test_stepping_off_the_bank_the_depth_grows_from_zero():
+    s, _ = onto_a_stone()
+    s = with_donkey(s, state=dict(depth=6.0))
+    sc = scene(new_view(s, 0.0), at_u(s, 0.5), 0.0)
+    assert sc.water_y == pytest.approx(water_line(CFG, sc.feet[Role.DONKEY][1], 3.0))
+
+
+def test_on_one_stone_the_water_line_is_the_drawn_water():
+    """The water rising over a dry stone: d goes from −4 to +6 cm, so the line is where the drawn water is (d < 0 is
+    not counted as 0: that would put the line 3 cm up at u = 0.5, over the water)."""
+    s, col = onto_a_stone()
+    s = with_donkey(s, previous=dict(row=0, col=col, depth=-4.0), state=dict(depth=6.0))
+    view = new_view(s, 0.0)
+    assert scene(view, at_u(s, 0.3), 0.0).water_y is None                     # d = −1: the water under the feet
+    sc = scene(view, at_u(s, 0.5), 0.0)
+    assert sc.water_y == pytest.approx(water_line(CFG, sc.feet[Role.DONKEY][1], 1.0))
+
+
+def test_a_dry_stone_has_no_water_line():
+    s, _ = onto_a_stone()
+    s = with_donkey(s, state=dict(depth=-4.0))
+    assert scene(new_view(s, 0.0), at_u(s, 1.0), 0.0).water_y is None
+
+
+SWEPT_AT = (3, 6)
+
+
+def swept(s):
+    """The last tick swept the donkey off SWEPT_AT: one life less, back on the south bank in the same column."""
+    lives = s.state.donkey.lives
+    return with_donkey(s, previous=dict(row=SWEPT_AT[0], col=SWEPT_AT[1], depth=25.0, lives=lives),
+                       state=dict(row=-1, col=SWEPT_AT[1], depth=None, lives=lives - 1))
+
+
+def test_a_swept_donkey_does_not_slide_back_to_the_bank():
+    s = swept(start(CFG, SEED, 0.0))
+    sc = scene(new_view(s, 0.0), at_u(s, 0.5), 0.0)
+    bank = CFG.render.layout.bank_z_cm
+    assert sc.feet[Role.DONKEY] == pytest.approx(feet(CFG, Role.DONKEY, (-1, SWEPT_AT[1]), bank))
+    assert (sc.rows[Role.DONKEY], sc.water_y) == (-1, None)
+
+
+def a_ghost_view(s, at_s):
+    event = DonkeySwept(t=0, seq=0, row=SWEPT_AT[0], col=SWEPT_AT[1], depth_cm=25.0, cause=SweptCause.DEPTH,
+                        items_dropped=0)
+    view = new_view(s, 0.0)
+    donkey = update(view.animators[Role.DONKEY], observe(s.state, Role.DONKEY), [event], at_s, CFG)
+    return dataclasses.replace(view, animators={**view.animators, Role.DONKEY: donkey})
+
+
+@pytest.mark.parametrize("on_stone", [True, False])
+def test_the_ghost_plays_on_the_swept_cell_cropped_at_the_drawn_water(on_stone):
+    s = swept(start(CFG, SEED, 0.0))
+    world = s.state.world
+    is_stone, base_h = world.is_stone.copy(), world.base_h.copy()
+    is_stone[SWEPT_AT], base_h[SWEPT_AT] = on_stone, 0.0
+    high = np.full(CFG.map.cols, 40.0)                                         # well over the stone
+    state = dataclasses.replace(s.state, world=dataclasses.replace(world, is_stone=is_stone, base_h=base_h),
+                                water=dataclasses.replace(s.state.water, level=high))
+    s = at_u(dataclasses.replace(s, state=state), 0.5)
+    view = a_ghost_view(s, 5.0)
+    sc = scene(view, s, 5.3)
+    ghost_seen, cell = ghost_look(view.animators[Role.DONKEY], 5.3, CFG)
+    obs, level = observe(s.state, Role.DONKEY), sc.levels[SWEPT_AT[1]]
+    top = stone_top_z(obs, *SWEPT_AT)
+    assert (top is not None) is on_stone
+    z = level if top is None else top
+    assert sc.ghost.look == ghost_seen and sc.ghost.look.clip is Clip.SWEPT and sc.ghost.row == SWEPT_AT[0]
+    assert sc.ghost.feet == pytest.approx(feet(CFG, Role.DONKEY, cell, z))
+    expected = water_line(CFG, sc.ghost.feet[1], level - z)
+    assert sc.ghost.water_y == (None if expected is None else pytest.approx(expected))
+    assert (sc.ghost.water_y is None) is not on_stone
+
+
+def test_the_ghost_is_gone_when_its_clip_ends():
+    s = swept(start(CFG, SEED, 0.0))
+    view = a_ghost_view(s, 5.0)
+    assert scene(view, s, 5.0 + duration_s(Clip.SWEPT, CFG)).ghost is None
+    assert scene(new_view(s, 0.0), s, 5.0).ghost is None
 
 
 # --- the scene ---------------------------------------------------------------------------------------------------

@@ -8,13 +8,13 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from engine.events import Role
-from engine.observe import observe
+from engine.observe import Observation, observe
 from game.session import Session
-from render.characters.animator import Animator, look, new_animator, update
+from render.characters.animator import Animator, ghost_look, look, new_animator, update
 from render.interpolation import lerp, tick_progress
-from render.board import stand_z
-from render.layout import feet
-from render.scene import Scene
+from render.board import stand_z, stone_top_z
+from render.layout import feet, water_line
+from render.scene import Ghost, Scene
 
 
 @dataclass(frozen=True)
@@ -49,18 +49,22 @@ def progress(session: Session) -> float:
 
 def scene(view: View, session: Session, now_s: float) -> Scene:
     """VISUALS §4.1: the observation, the water levels and the characters' feet between the previous and the current
-    tick (cell and height), the rows they are drawn with, their looks and the status."""
+    tick (cell and height), the rows they are drawn with, their looks, the donkey's water line, the ghost and the
+    status. A swept donkey (a life less) is on the bank at once: it does not slide back across the river."""
     cfg, u = session.config, progress(session)
     before, now = observe(session.previous, Role.DONKEY), observe(session.state, Role.DONKEY)  # V0: one view
+    swept = now.donkey.lives < before.donkey.lives
+    was = now if swept else before
     cells = {
         Role.SHREK: ((-1, before.shrek.col), (-1, now.shrek.col)),
-        Role.DONKEY: ((before.donkey.row, before.donkey.col), (now.donkey.row, now.donkey.col)),
+        Role.DONKEY: ((was.donkey.row, was.donkey.col), (now.donkey.row, now.donkey.col)),
     }
     feet_at = {}
     for role, (a, b) in cells.items():
-        za, zb = stand_z(before, *a), stand_z(now, *b)
+        za, zb = stand_z(before, *a), stand_z(now, *b)        # swept: a is the bank, the same in both
         feet_at[role] = feet(cfg, role, lerp(a, b, u), za + u * (zb - za))
     levels = tuple(float(lo + u * (hi - lo)) for lo, hi in zip(before.water.level, now.water.level))
+    da, db = _depth(was), _depth(now)
     return Scene(
         obs=now,
         before=before,
@@ -72,4 +76,25 @@ def scene(view: View, session: Session, now_s: float) -> Scene:
         mode=session.mode.value,
         paused=session.paused,
         seed=session.seed,
+        water_y=water_line(cfg, feet_at[Role.DONKEY][1], da + u * (db - da)),
+        ghost=_ghost(view.animators[Role.DONKEY], now, levels, now_s),
     )
+
+
+def _depth(obs: Observation) -> float:
+    """§4.1: the donkey's depth for its water line, 0 on a bank. A dry stone's d < 0 stays: between ticks on one
+    stone the line is then where the drawn water is."""
+    d = obs.donkey.depth
+    return 0.0 if d is None else d
+
+
+def _ghost(anim: Animator, obs: Observation, levels: tuple[float, ...], now_s: float) -> Ghost | None:
+    """§4.1: the ghost on its cell's drawn stone top (the water without a stone), cropped at the drawn water."""
+    seen = ghost_look(anim, now_s, obs.config)
+    if seen is None:
+        return None
+    ghost, (r, c) = seen
+    top = stone_top_z(obs, r, c)
+    z = levels[c] if top is None else top
+    at = feet(obs.config, Role.DONKEY, (r, c), z)
+    return Ghost(ghost, at, r, water_line(obs.config, at[1], levels[c] - z))
