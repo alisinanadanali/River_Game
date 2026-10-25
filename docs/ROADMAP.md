@@ -121,6 +121,8 @@ River_Game/
 ├── engine/                 # saf Python + numpy (ADR-005)
 ├── controllers/            # keyboard, bots/, rl policy — act(observation) -> action
 ├── render/                 # pygame-ce; characters/ (VISUALS §9)
+├── game/                   # oyun döngüsü: session.py (saf, CONTROLS §7); yalnız main.py import eder
+├── main.py                 # pygame kabuğu: pencere, olaylar, saat (Faz 1)
 ├── logs/                   # replay + olay JSONL + metrikler
 ├── envs/                   # Gymnasium + PettingZoo
 ├── tools/                  # tactical_cli, design_calcs, ghosting_test, bench, character_preview

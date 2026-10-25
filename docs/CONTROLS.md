@@ -184,7 +184,37 @@ düzende 3 s kesintisiz algılandı. Yedek düzen testi gerekmedi (— = test ed
 `default.yaml` değişmedi. Not: araç şimdilik yalnızca basılı scancode'ları gösteriyor; "her tick oluşan iki
 eylem" gösterimi motor ve controller'lar hazır olunca (Adım 4 sonrası) eklenecek.
 
-## 7. Gamepad (kapsam dışı, mimari hazır)
+## 7. Oyun oturumu (Faz 1, `game/session.py`)
+
+Oturum motoru duvar saatine ve tuşlara bağlayan saf katmandır. Her karede o karenin tuş olaylarını (§4.1) ve
+saati (`now_s`, sn) alır; pygame olaylarını çevirmek ve saati okumak kabuğun (`main.py`) işidir. Bir karede sıra:
+(1) karenin süresi sayılır, karenin **başındaki** duruma göre (duraklatılmışsa sayılmaz; Esc'e basılan karede
+Esc'ten önceki süre sayılır); (2) tuş olayları geldikleri sırayla işlenir; (3) tick sınırı geçildiyse ve oyun
+duraklatılmamışsa tick ilerler. Genel tuşlar oturumundur, rollerin girdi tamponuna basış olarak girmez.
+
+- **Sabit adımlı saat (gerçek zamanlı mod):** tick sınırları `time.tick_seconds` aralıklıdır; ilk sınır oturum
+  başladıktan (ya da gerçek zamanlı moda geçildikten) `tick_seconds` sonradır. Bir karede **en çok bir** tick
+  ilerler. Oyun bir tick'ten fazla geride kalırsa (pencere sürüklendi, makine dondu) birikmiş süre atılır ve sayaç
+  o kareden yeniden başlar: oyun hızlanarak yetişmez, çünkü oyuncular o arada tuşa basamadı.
+- **Genel tuşlar** (§3) basış olarak (§4.1: bırakılmıştan basılıya) ve geldikleri sırayla işlenir:
+  - **F1** hata ayıklama katmanını açar/kapar; oyunu etkilemez, her durumda çalışır.
+  - **Esc** duraklatır / sürdürür. Duraklatmada tick ilerlemez ve geçen süre sayılmaz: sürdürünce tick penceresi
+    kaldığı yerden devam eder. Duraklatmada rol tuşlarının basışları sayılmaz, bırakmaları sayılır (basılı tuşlar
+    doğru kalsın); duraklatmadan önceki basışlar pencerede kalır.
+  - **F2** gerçek zamanlı ↔ taktik geçişi. İki modun bekleyen basış ve seçimleri silinir, basılı tuşlar kalır.
+  - **F5** aynı seed ile yeniden başlatır (`new_game(config, seed)`). Mod korunur, duraklatma kalkar, bekleyen
+    basış ve seçimler silinir, basılı tuşlar kalır; saat o kareden başlar. Yeniden başlatma sayılır
+    (`restarts`); bırakılan oyunun o karedeki tick kayıtları da atılır.
+- **Taktik mod:** rol tuşlarının basışları (§4.1; basılı tuşun yinelenen "basıldı" olayı değil) §5.2'ye gider; iki
+  rol onaylayınca tick o anda ilerler. "Karede en çok bir tick" gerçek zamanlı saatin kuralıdır; taktik modda
+  her onay çifti bir tick'tir, bir kareye birden fazla düşebilir.
+- **Oyun sonu:** `game_over` olunca tick ilerlemez. Yalnız F1 ve F5 çalışır.
+- Başlangıç modu `controls.tactical_mode`'dur.
+- Oturum her karede o karenin tick'lerini (eylemler ve olaylar, sırayla) dışarı verir: çizim ve animasyon olayları, replay (Faz 2)
+  eylemleri buradan alır. Aynı seed ve aynı eylemlerle motor aynı durumu verir (INV-02); test bunu oturumun
+  kaydettiği eylemlerle denetler.
+
+## 8. Gamepad (kapsam dışı, mimari hazır)
 
 Gamepad, `controllers/gamepad.py` olarak yeni bir controller eklenerek desteklenir. Motor, render ve config
 şeması değişmez; yalnızca `controls.devices` altına cihaz eşlemesi eklenir.

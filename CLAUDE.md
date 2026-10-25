@@ -1,4 +1,4 @@
-**Dependency rule (ADR-005): `engine/` never imports from `render/`, `controllers/`, `envs/`, `logs/` or `tools/`. Outer layers depend on the engine, never the reverse.**
+**Dependency rule (ADR-005): `engine/` never imports from `render/`, `controllers/`, `envs/`, `logs/`, `tools/` or `game/`. Outer layers depend on the engine, never the reverse; nothing but `main.py` imports `game/`.**
 
 # Nehir Geçidi (River Crossing)
 
@@ -88,4 +88,6 @@ Phase 1 micro-steps (ROADMAP); 1.0 (fonts + strings) done; 1.1 done: `controller
 buffer, CONTROLS §4.1: scancode events in, `tick_actions` at the boundary; no pygame, guarded by
 `tests/controllers/test_controllers_imports.py`); 1.2 done: `controllers/tactical.py` (pure tactical
 confirm, CONTROLS §5.2: Shrek selects move/aim, an ability or the wait key confirms; a confirmation is
-final). Next 1.3 (`game/session.py`: fixed-step clock, F2/Esc/F5, game over).
+final); 1.3 done: `game/session.py` (pure loop state, CONTROLS §7: `frame(session, key_events, now_s)`, fixed-step
+clock with at most one real-time tick a frame and the backlog dropped, F1/Esc/F2/F5, game over; `ticks` records
+actions + events; nothing imports `game/`, `tests/game/test_game_imports.py`). Next 1.4 (walking skeleton `main.py`).

@@ -99,6 +99,8 @@ eklenir, sonra kodda ve arayüzde kullanılır. Birim sütunu ADR-008'e uyar: y�
 | Basılı tutma tekrarı | `hold repeat` | Penceredeki basış yoksa basılı hareket/nişan tuşunun eylemi |
 | Seçim (taktik) | `selection` | Shrek'in onaylanmamış `move`/`aim` tercihi (CONTROLS §5.2) |
 | Onay (taktik) | `confirm` | Rolün o tick'teki eylemini kesinleştiren basış (CONTROLS §5.2) |
+| Oturum | `Session` | Bir oyunun döngü durumu: motor durumu, mod, duraklatma, saat, girdiler (CONTROLS §7) |
+| Duraklatma | `paused` | Esc ile; tick ilerlemez, süre sayılmaz |
 | Hata ayıklama katmanı | `debug_overlay` | F1 ile açılan sayısal katman |
 | RNG akışı | `rng stream` | `rng_world`, `rng_water`, `rng_items`, `rng_throw`, `rng_slip` |
 | Kural kimliği | `rule id` | MODEL.md'deki M-, W-, D-, S-, I-, R- önekli kimlik |

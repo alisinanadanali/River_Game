@@ -1,6 +1,7 @@
 """CONTROLS.md §5.2: tactical mode in the window. Each tick waits until both roles confirm an action.
 
-Pure, like the real-time buffer: key events carry scancodes; only presses count. The session steps the engine
+Pure, like the real-time buffer: key events carry scancodes; every KeyDown given here counts as a press, so the
+caller passes only real presses (§4.1: a repeated down of a held key is none; the session knows what is held). The session steps the engine
 when tactical_actions() returns the tick's actions, then starts the next tick from an empty Tactical().
 """
 
