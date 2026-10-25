@@ -83,4 +83,6 @@ event schema 1 is frozen and fingerprinted (`tests/engine/test_version.py`): an 
 string with a Turkish letter there, VISUALS §7), `render/fonts.py` (committed Noto fonts in `assets/fonts/`,
 hashes in VISUALS §7) and `tools/character_preview.py` (`--bench`
 ≈ 240 µs/frame). `tests/render/test_render_imports.py` guards render/'s imports (ADR-005 update). Next: the
-Phase 1 micro-steps (ROADMAP); 1.0 (fonts + strings) done, next 1.1 (keyboard input buffer).
+Phase 1 micro-steps (ROADMAP); 1.0 (fonts + strings) done; 1.1 done: `controllers/keyboard.py` (pure input
+buffer, CONTROLS §4.1: scancode events in, `tick_actions` at the boundary; no pygame, guarded by
+`tests/controllers/test_controllers_imports.py`). Next 1.2 (tactical confirm, CONTROLS §5).

@@ -9,7 +9,8 @@ import re
 from collections.abc import Callable, Iterable
 from enum import Enum
 
-from engine.actions import Ability, Actions, Aim, DonkeyAction, ShrekAction, ShrekMove
+from controllers.keyboard import SHREK_COMPONENTS  # keymaps.shrek_alt action → (field, value)
+from engine.actions import Actions, DonkeyAction, ShrekAction
 from engine.config import Config
 from engine.donkey import balance, classify_depth, effective_height, load_kg, stance_ready, stone_under
 from engine.events import DepthState, Event, ItemStatus, Role, Side
@@ -60,15 +61,6 @@ from render.strings_tr import (
 
 HID_A, HID_Z, HID_SPACE = 4, 29, 44  # USB HID usage page 7 (= SDL scancodes): 4 … 29 are a … z, 44 the space bar
 CELL = 4                             # characters per map cell: marker, two glyph characters, marker
-SHREK_COMPONENTS = {                 # keymaps.shrek_alt action → (ShrekAction field, value)
-    "MOVE_W": ("move", ShrekMove.W),
-    "MOVE_E": ("move", ShrekMove.E),
-    "AIM_UP": ("aim", Aim.UP),
-    "AIM_DOWN": ("aim", Aim.DOWN),
-    "THROW": ("ability", Ability.THROW),
-    "ROCK": ("ability", Ability.ROCK),
-    "DAM": ("ability", Ability.DAM),
-}
 EMPTY = "—"                          # an empty list in the panels
 TIERS = {DepthState.DRY: "K", DepthState.ANKLE: "B", DepthState.KNEE: "D", DepthState.SWEPT: "!"}
 

@@ -60,6 +60,25 @@ Hangi düzenin kullanılacağı `controls.shrek_keymap: default | alt` ile seçi
   salınır.
 - Tampon `controllers/keyboard.py`'de yaşar; motor yalnızca kurulmuş eylemi görür.
 
+### 4.1 Kesin kurallar ve kenar durumları
+
+- **Basış**, tuşun bırakılmış durumdan basılı duruma geçişidir. İşletim sisteminin otomatik tekrarı kullanılmaz;
+  zaten basılı bir tuş için gelen ikinci "basıldı" olayı yeni basış sayılmaz.
+- **Kısa dokunuş kaybolmaz:** pencere içinde basılıp bırakılan tuş da o pencerenin basışıdır.
+- **Tekrar eden tuşlar:** eşeğin `MOVE_*` tuşları; Shrek'in `move` (← →) ve `aim` (↑ ↓) tuşları. Nişan da
+  tekrarlar: ↑ basılı tutulursa nişan her tick bir satır ilerler (tutarak nişan kaydırma). Birden çok tekrar eden
+  tuş basılıysa **en son basılan** kazanır. Duruş (Q/E), THROW, ROCK ve bekle tuşları tekrar etmez.
+- **Bekle tuşları:** eşeğin X tuşu bir basıştır ve `NOOP` seçer; son basış kazandığı için aynı penceredeki
+  önceki W'yi geri alır ve o tick tekrarı keser. Shrek'in `.` tuşu gerçek zamanlı modda yok sayılır; yalnız
+  taktik onay içindir (§5).
+- **Odak kaybı:** pencere odağı kaybedince basılı tuşlar unutulur (bırakma olayları kaybolur, takılı tuş
+  kalmasın); penceredeki basışlar kalır. Enter da bırakılmış sayılır, baraj sonraki tick salınır.
+- **Rolün tuşu olmayan scancode'lar** (öbür rolün, genel tuşlar, tanımsızlar) o rolün eylemini etkilemez. Genel
+  tuşları (§3) tampon değil oyun oturumu işler.
+- Shrek'in tuşları `controls.shrek_keymap` ile seçilen düzenden (`shrek_default` ya da `shrek_alt`) gelir.
+- **Tampon saftır:** olaylar scancode olarak gelir (`KeyDown`, `KeyUp`, `FocusLost`); `controllers/` pygame'i
+  import etmez (ADR-005). pygame olaylarını bu üç türe çevirmek oyun kabuğunun işidir.
+
 ## 5. Taktik mod
 
 - Her tick, iki oyuncu da bir eylem **onaylayana** kadar bekler. Herhangi bir eylem tuşu o rolün eylemini
