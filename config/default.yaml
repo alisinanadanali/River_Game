@@ -150,6 +150,10 @@ render:
     background: "#19191F"      # pencere (VISUALS §4.1)
     bank: "#5C4630"            # kıyı şeritleri
     text: "#EBEBEB"            # yazı, nişan çerçevesi
+  hud:                         # VISUALS §5
+    warn_share: 0.8            # kıyı kuyruğu (payı aşınca) ve baraj (payına ulaşınca) uyarısı; (0, 1]
+    blink_hz: 2                # baraj uyarısının yanıp sönmesi; > 0
+    slip_prob_tiers: [0.03, 0.1, 0.25]   # denge çubuğu: p_slip < p₁ KURU, < p₂ BİLEK, < p₃ DİZ, aksi TEHLİKE; artan, (0, 1]
   debug_overlay: false
   forecast_ticks: 5            # hata ayıklama dalga tahmini ufku
   characters:                  # VISUALS §9, ADR-012. Resimler yerel: assets/private/ git'e girmez

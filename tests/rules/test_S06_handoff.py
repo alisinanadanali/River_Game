@@ -3,10 +3,13 @@
 (the one-tick-earlier rule of D-08 does not apply); otherwise, or if the bag is full, it returns to the queue.
 """
 
+import pytest
+
 from engine.actions import Ability, Actions, DonkeyAction, ShrekAction
-from engine.donkey import Bag, Side
+from engine.donkey import Bag, Donkey, Side
 from engine.events import CatchSource, ItemCaught, ItemLost, ItemReturnedToBank, ItemThrown, LostReason, ProjectileKind, ReturnCause
 from engine.items import Bank, Item, ItemStatus
+from engine.shrek import Shrek, is_handoff
 
 from tests.support import run, set_up, still
 
@@ -80,3 +83,14 @@ def test_returning_to_a_full_queue_loses_it():
     returned = [(e.reason, e.origin) for e in of(trace, ItemLost) if e.item_id == 0]
     assert returned == [(LostReason.BANK_OVERFLOW, ItemStatus.IN_FLIGHT)]
     assert of(trace, ItemReturnedToBank) == []
+
+
+@pytest.mark.parametrize(("donkey", "shrek_col", "expected"), [
+    ({"row": -1, "col": 4, "stance": Side.LEFT}, 4, True),
+    ({"row": -1, "col": 3, "stance": Side.LEFT}, 4, False),     # another column
+    ({"row": -1, "col": 4, "stance": Side.NONE}, 4, False),     # no stance
+    ({"row": 0, "col": 4, "stance": Side.LEFT}, 4, False),      # in the river
+])
+def test_is_handoff_is_the_s06_condition(donkey, shrek_col, expected):
+    """Read by throw() and by the HUD (VISUALS §5)."""
+    assert is_handoff(Donkey(lives=1, **donkey), Shrek(col=shrek_col, aim_row=0)) is expected

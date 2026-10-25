@@ -18,6 +18,7 @@ from engine.stones import throw_rock
 from engine.water import release_dam, start_dam
 
 if TYPE_CHECKING:  # engine/tick.py imports engine/state.py, which imports this module
+    from engine.donkey import Donkey
     from engine.tick import Tick
 
 
@@ -66,6 +67,11 @@ def throw_sigma(aim_row: int, mass: float, shrek_cfg: ShrekConfig) -> float:
     )
 
 
+def is_handoff(donkey: Donkey, shrek: Shrek) -> bool:
+    """S-06: a throw now would be a handoff: the donkey in a stance on the south bank, in Shrek's column."""
+    return donkey.row == -1 and donkey.col == shrek.col and donkey.stance is not Side.NONE
+
+
 def aim_cell(shrek: Shrek) -> tuple[int, int]:
     """S-02: the cell Shrek aims at, (aim_row, col)."""
     return shrek.aim_row, shrek.col
@@ -109,7 +115,7 @@ def throw(tick: Tick) -> Tick:
     shrek, donkey, cfg = state.shrek, state.donkey, state.config.shrek
     item_id = state.bank.queue[0]
     item = state.items[item_id]
-    if donkey.row == -1 and donkey.col == shrek.col and donkey.stance is not Side.NONE:
+    if is_handoff(donkey, shrek):
         kind, target, sigma, flight = ProjectileKind.HANDOFF, (-1, shrek.col), 0.0, cfg.bank_load_ticks
         landing = (float(target[0]), float(target[1]))
     else:

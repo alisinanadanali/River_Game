@@ -114,3 +114,23 @@ def test_layouts_may_reuse_each_others_keys(raw):
     data = copy.deepcopy(raw)
     data["controls"]["keymaps"]["shrek_alt"]["NONE"] = 56     # '.' is shrek_default NONE too
     validate_config(data)
+
+
+# --- render.hud (VISUALS §5) -------------------------------------------------------------------------------------
+
+def hud_edited(raw, **hud):
+    data = copy.deepcopy(raw)
+    data["render"]["hud"].update(hud)
+    return data
+
+
+@pytest.mark.parametrize("tiers", [[0.1, 0.03, 0.25], [0.03, 0.03, 0.25], [0.03, 0.1], [0.0, 0.1, 0.25], [0.03, 0.1, 1.5]])
+def test_slip_prob_tiers_are_three_increasing_probabilities(raw, tiers):
+    with pytest.raises(ValidationError, match="slip_prob_tiers"):
+        validate_config(hud_edited(raw, slip_prob_tiers=tiers))
+
+
+@pytest.mark.parametrize(("key", "value"), [("warn_share", 0.0), ("warn_share", 1.2), ("blink_hz", 0.0)])
+def test_hud_ranges(raw, key, value):
+    with pytest.raises(ValidationError, match=key):
+        validate_config(hud_edited(raw, **{key: value}))

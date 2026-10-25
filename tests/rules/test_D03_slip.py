@@ -9,7 +9,7 @@ import math
 import pytest
 
 from engine.actions import Actions, DonkeyAction
-from engine.donkey import Bag, Side, slip_probability
+from engine.donkey import Bag, Side, slip_probability, slip_risk
 from engine.events import DonkeyMoved, DonkeySlipped, DropCause, ItemDropped, ItemFloated
 from engine.items import Item, ItemStatus
 from engine.rng import draw_blocks
@@ -140,3 +140,32 @@ def test_slip_rate_through_the_engine():
         slips += any(isinstance(e, DonkeySlipped) for e in events)
     p = slip_probability(-0.2, 1.0, D)
     assert abs(slips / n - p) < 4 * math.sqrt(p * (1 - p) / n)
+
+
+# --- slip_risk: the next move's p_slip, without drawing (read by the HUD, VISUALS §5) ------------------------------
+
+KAPPA8 = still({"map": {"rows": 3, "cols": 5}, "donkey": {"slip_base_prob": 0.0, "slip_kappa": 8.0}})
+TEMP = TempStone(id=0, row=1, col=3, h=20.0, spawned_at=0)
+
+
+@pytest.mark.parametrize(("donkey", "temp", "expected"), [
+    ({**WATERMELON_LEFT}, (), (0.0, False)),                                    # on the bank
+    ({"row": 0, "col": 2}, (), (0.0, False)),                                  # empty bags
+    ({"row": 0, "col": 2, **WATERMELON_LEFT}, (), (8.0 * 0.04, False)),
+    ({"row": 0, "col": 3, **WATERMELON_LEFT}, (), (8.0 * 0.04 * 3.0, True)),   # mossy
+    ({"row": 1, "col": 3, **WATERMELON_LEFT}, (TEMP,), (8.0 * 0.04, False)),   # a temporary stone
+])
+def test_slip_risk_is_the_next_moves_p_slip(donkey, temp, expected):
+    state, _ = set_up(KAPPA8, LINE, items=ITEMS, donkey=donkey, stones={"temp": temp, "next_temp_id": len(temp)})
+    p, mossy = slip_risk(state.world, state.donkey, KAPPA8)
+    assert (p, mossy) == (pytest.approx(expected[0]), expected[1])
+
+
+def test_slip_risk_is_what_the_engine_draws_against():
+    for seed in range(20):
+        start = set_up(KAPPA8, LINE, seed=seed, items=ITEMS, donkey={"row": 0, "col": 3, **WATERMELON_LEFT})
+        slipped = [e for e in run(KAPPA8, seed, [W], start=start).events if isinstance(e, DonkeySlipped)]
+        if slipped:
+            assert (slipped[0].p_slip, slipped[0].mossy) == slip_risk(start[0].world, start[0].donkey, KAPPA8)
+            return
+    raise AssertionError("no slip in 20 seeds")

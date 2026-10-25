@@ -137,23 +137,47 @@ Faz 1'in ilk oynanabilir penceresi; sonraki adımlar her parçayı yerine koyar 
 
 ## 5. HUD öğeleri
 
-**Üst şerit (ortak):** kalan süre (sn ve dolum çubuğu), skor, can kalpleri, mod etiketi.
+HUD (Faz 1.8) iki parçadır: saf bir model (`render/hud.py`: gözlemden, moddan ve duvar saatinden sayılar;
+pygame yok) ve onu çizen `render/draw.py`. Model `game/view.py`'de kurulur ve Scene'e konur (`Scene.hud`). Her
+sayı ya gözlemden ya config'den gelir, kuralı motorun fonksiyonuyla hesaplanır (ör. D-02 `balance`, S-04
+`throw_sigma`); HUD kuralı kendisi yeniden yazmaz. Eşikler `render.hud`'dadır. Kesirli sayılar virgüllüdür (§7).
+
+**Üst şerit (ortak):** kalan süre (sn, §4.1'deki gibi yukarı yuvarlanmış) ve dolum çubuğu
+(`(game_length_ticks − t) / game_length_ticks`), skor, `time.lives` kalp (kalan can dolu, kaybedilen boş), mod
+etiketi.
 
 **Eşek paneli:**
-- **Denge çubuğu:** −0,3 … +0,3 aralığında yatay çubuk, ortada sıfır çizgisi. Gösterge rengi bir sonraki
-  hareketteki p_slip'e göre (KURU/BİLEK/DİZ/TEHLİKE skalasıyla aynı palet). Yosunlu taştayken çarpan ikonu.
-- **Heybeler:** sol/sağ iki dikey kap; kütle dolumu (kg / 60) ve hacim kareleri (4 kutu). En üst yük ikonu
-  belirgin (önce o düşer).
-- **Derinlik:** durum adı (KURU / BİLEK / DİZ) + desenli rozet + sayısal d (cm).
-- **Duruş:** sol/sağ ok ikonu ve kalan duruş süresi; "hazır" (bir tick geçti) durumunda parlak.
+- **Denge çubuğu:** δ (D-02), `−δ_max … +δ_max` aralığında yatay çubuk, ortada sıfır çizgisi.
+  `δ_max = bag_max_kg_per_side / (bag_max_kg_per_side + mass_kg)`: bir heybe dolu, öteki boşken; δ bu aralığın
+  dışına çıkamaz (varsayılanla ≈ 0,23). Gösterge rengi **bir sonraki hareketteki** p_slip'e göre (D-03, motorun
+  `slip_risk`'i: kıyıda ve boş heybeyle 0): `hud.slip_prob_tiers = [p₁, p₂, p₃]` için p < p₁ KURU, p < p₂
+  BİLEK, p < p₃ DİZ, aksi hâlde TEHLİKE rengi (§3 paleti). Altında `%p` yazılır. Yosunlu taştayken
+  "≈ ×μ" işareti (`mossy_slip_multiplier`).
+- **Heybeler:** sol ve sağ iki dikey kap. Her kapta `bag_max_volume_per_side` hacim karesi alttan üste dolar:
+  her yük hacmi kadar kare kaplar (D-09 yığını, alttaki ilk giren); **en üst yük** (kayınca ya da DİZ'de önce
+  düşen, D-03, D-06) açık renk çerçeveyle belirgindir. Yanında kütle çubuğu
+  `kütle / bag_max_kg_per_side` ve altında "kg".
+- **Derinlik:** durum adı (KURU / BİLEK / DİZ, `depth_state`) + o kademenin renk ve desenli rozeti (§3) +
+  sayısal `d` (cm; kıyıda yazılmaz).
+- **Duruş:** sol/sağ ok (üçgen, fonttan değil: Noto Sans'ta ok yok, §7) ve kalan duruş süresi çubuğu ile
+  saniyesi. Kalan tick `stance_since + stance_max_ticks + 1 − t` (D-08: t₀'da alınan duruş t₀ + 1 …
+  t₀ + `stance_max_ticks` tick'lerinde yakalar; gözlemdeki `t` sıradaki tick'tir). Gözlem bir tick'ten sonra
+  alındığından gösterilen her duruş sıradaki tick'te yakalar (`stance_ready`); ayrı bir "hazır" parlaklığı yoktur.
 
 **Shrek paneli:**
-- **Kıyı kuyruğu:** `bank_capacity` yuva; dolu yuvalar yük ikonu, doluluk %80'i geçince uyarı rengi.
-- **Sıradaki yük:** tür, kg, hacim; bu yük için o anki σ ve tahmini yakalama olasılığı (MODEL A.3 formülü).
-- **Cooldown'lar:** Fırlat ve Kaya at için dairesel dolum; aktif geçici taş sayısı (`n / rock_max_active`).
-- **Baraj:** Q / Q_max dikey çubuğu; %80'de yanıp sönen patlama uyarısı; salınım genliği tahmini (A cm).
+- **Kıyı kuyruğu:** `bank_capacity` yuva; dolu yuvalar yükün türünün harfiyle. Doluluk payı
+  `hud.warn_share`'i **aşınca** yuvalar uyarı rengindedir (`palette.danger`).
+- **Sıradaki yük** (kuyruğun başı): tür adı, kg, hacim; şimdiki nişanla σ (S-04 `throw_sigma`) ve tahmini
+  yakalama olasılığı `P = 1 − exp(−r²/2σ²)` (MODEL Ek A.3, `r = catch_radius_cells`; eşeğin nişan hücresinde ve
+  duruşta olduğu varsayımıyla). Eşek güney kıyısında, Shrek'in sütununda ve duruştaysa atış teslim olur (S-06):
+  σ = 0 ve "teslim" yazılır.
+- **Bekleme süreleri:** Fırlat ve Kaya at için dairesel dolum, `kalan / *_cooldown_ticks` (süre 0 ise hep hazır);
+  aktif geçici taş sayısı (`n / rock_max_active`).
+- **Baraj:** `Q / q_max_cm_cols` dikey çubuğu; tutulurken payı `hud.warn_share`'e **ulaşınca** çubuk
+  `hud.blink_hz` ile yanıp söner (yarım periyot açık, yarım kapalı; duvar saatiyle). Tutulurken salınım genliği
+  tahmini `A = Q / (s·√(2π))` (W-05, motorun `wave_volume`'u).
 
-**Harita üstü:**
+**Harita üstü** (Faz 1.9, katmanlar):
 - **Nişan imleci:** Shrek'in sütununda, `aim_row` hücresinde çerçeve.
 - **Belirsizlik halkası:** hedefte 1σ ve 2σ çemberleri (σ sıradaki yükün kütlesiyle). Ayrıca eşeğin
   çevresinde `catch_radius` çemberi. İki halkanın örtüşmesi yakalama şansını sezgisel gösterir.

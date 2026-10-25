@@ -159,6 +159,18 @@ def slip_probability(delta: float, mu: float, donkey_cfg: DonkeyConfig) -> float
     return min(1.0, donkey_cfg.slip_base_prob + donkey_cfg.slip_kappa * delta * delta * mu)
 
 
+def slip_risk(world, donkey: Donkey, config: Config) -> tuple[float, bool]:
+    """D-03: the next move's (p_slip, mossy) without drawing; 0 off a stone or with empty bags.
+
+    `world` is the World or an observation's WorldView (both have rows, is_stone and mossy).
+    """
+    if not in_river(donkey, world.rows) or not (donkey.bag_left.items or donkey.bag_right.items):
+        return 0.0, False
+    mossy = bool(world.is_stone[donkey.row, donkey.col] and world.mossy[donkey.row, donkey.col])
+    p = slip_probability(balance(donkey, config), config.map.mossy_slip_multiplier if mossy else 1.0, config.donkey)
+    return p, mossy
+
+
 def stance_ready(donkey: Donkey, t: int) -> bool:
     """D-08: a stance catches only in ticks after the one it was taken in."""
     return donkey.stance is not Side.NONE and t > donkey.stance_since
@@ -204,13 +216,10 @@ def _maybe_slip(tick: Tick) -> Tick:
     """D-03 (u_slip[0], side u_slip[1]): only leaving a stone, only with something in the bags."""
     state = tick.state
     donkey, cfg = state.donkey, state.config
-    if not in_river(donkey, cfg.map.rows) or not (donkey.bag_left.items or donkey.bag_right.items):
+    p, mossy = slip_risk(state.world, donkey, cfg)
+    if not tick.u_slip[0] < p:                     # p = 0 off a stone or with empty bags, and u ∈ [0, 1)
         return tick
-    mossy = bool(state.world.is_stone[donkey.row, donkey.col] and state.world.mossy[donkey.row, donkey.col])
     delta = balance(donkey, cfg)
-    p = slip_probability(delta, cfg.map.mossy_slip_multiplier if mossy else 1.0, cfg.donkey)
-    if not tick.u_slip[0] < p:
-        return tick
     side = heavy_side(delta, float(tick.u_slip[1]))
     tick = tick.emit(DonkeySlipped, side=side, p_slip=p, delta=delta, mossy=mossy)
     return drop_top(tick, side, DropCause.SLIP)

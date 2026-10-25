@@ -254,6 +254,21 @@ class LayoutConfig(StrictModel):
     front_shade: Fraction                      # a front face's colour = its top's × this
 
 
+class HudConfig(StrictModel):
+    """VISUALS §5."""
+
+    warn_share: Annotated[float, Field(gt=0, le=1)]    # bank queue (above) and dam (reaching) warnings
+    blink_hz: PosFloat                                 # the dam warning's blinking
+    slip_prob_tiers: tuple[float, float, float]        # balance bar: p_slip below each → DRY, ANKLE, KNEE colour
+
+    @model_validator(mode="after")
+    def _tiers_increase(self):
+        p = self.slip_prob_tiers
+        if not 0 < p[0] < p[1] < p[2] <= 1:
+            raise ValueError(f"slip_prob_tiers must increase within (0, 1], got {list(p)}")
+        return self
+
+
 class PaletteConfig(StrictModel):
     dry: HexColor
     ankle: HexColor
@@ -342,6 +357,7 @@ class RenderConfig(StrictModel):
     font: str
     font_mono: str
     palette: PaletteConfig
+    hud: HudConfig                             # VISUALS §5
     debug_overlay: bool
     forecast_ticks: int
     characters: CharactersConfig               # VISUALS §9
