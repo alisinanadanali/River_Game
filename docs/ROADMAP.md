@@ -10,7 +10,7 @@ Her faz, kabul kriterlerinin tümü sağlanınca kapanır. İş akışı her faz
 | Kriter | Nasıl doğrulanır | Sonuç (v0.1.0) |
 |---|---|---|
 | Her kural kimliğinin testi | `tests/test_rule_coverage.py` (MODEL.md'den okur) | 37/37 |
-| INV-01 … INV-08, ≥ 200 seed × 300 tick | `HYPOTHESIS_PROFILE=full uv run pytest` | geçti |
+| INV-01 … INV-08, ≥ 200 seed × 300 tick | `uv run pytest --hypothesis-profile=full` | geçti |
 | INV-02 bayt düzeyinde | `tests/invariants/test_INV02_*` (alt süreç + `PYTHONHASHSEED` dahil) | geçti |
 | Ek A ile uyum | `uv run python -m tools.design_calcs` | 96/96 |
 | Taktik modda tam oyun | `tests/tools/test_tactical.py` (belgedeki komut, 300 tick) | geçti |

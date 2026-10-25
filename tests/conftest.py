@@ -1,7 +1,10 @@
 """Hypothesis profiles: `dev` (default, fast) and `full` (ROADMAP Phase 0 acceptance: >= 200 seeds x 300 ticks).
 
     uv run pytest                              # dev
-    HYPOTHESIS_PROFILE=full uv run pytest      # full: before a push and when closing a phase
+    uv run pytest --hypothesis-profile=full    # full: before a push and when closing a phase (any shell)
+
+The option comes from hypothesis's pytest plugin and wins over the HYPOTHESIS_PROFILE environment variable,
+which also works (bash: `HYPOTHESIS_PROFILE=full uv run pytest`; PowerShell: `$env:HYPOTHESIS_PROFILE = "full"`).
 
 Property tests take their example count from the profile, so the same test is quick while working and
 complete when it matters. A test that pins its own max_examples keeps it in both profiles.
