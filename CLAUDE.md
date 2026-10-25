@@ -65,6 +65,7 @@ uv run pytest tests/rules -k W05      # one rule
 uv run python -m tools.tactical_cli --seed 42 --profile percolation_edge
 uv run python -m tools.design_calcs   # re-check MODEL.md Appendix A
 uv run python -m tools.bench --stages # speed: µs/tick and ticks/s, per TICK.md step (ROADMAP >= 5 000 ticks/s)
+uv run python -m tools.cvd_shots      # VISUALS §3: colour-blindness screenshots into runs/cvd/
 uv run pytest -m perf                 # the speed guard; not in the default run, run it before a push
 uv run python main.py                 # Phase 1: pygame-ce game
 ```
@@ -95,4 +96,7 @@ shell, CONTROLS §7.1: events → `KeyDown`/`KeyUp`/`FocusLost`, `--seed`/`--pro
 driver with a fake clock), `game/view.py` (pure: animators follow the ticks, `scene()`), `render/layout.py` (pure flat
 board, VISUALS §4.1), `render/scene.py` (pure texts), `render/draw.py`; 1.5 done: oblique board (VISUALS §2: z on the engine's scale, `layout.z_room_cm`/`bank_z_cm`/
 `front_shade`; `render/board.py` pure heights, water polygons, prisms; rows drawn back to front with the characters;
-≈ 1 450 µs/frame). Next 1.6 (safety-margin colours + patterns, CVD test).
+≈ 1 450 µs/frame); 1.6 done: safety-margin colours + patterns (VISUALS §3: `render/colour.py` pure, Machado 2009
+CVD simulation + CIE76 ΔE ≥ 10 in `tests/render/test_colour.py`; under water the patterns carry the tiers; mossy and
+temporary-stone marks; `uv run python -m tools.cvd_shots` → `runs/cvd/`; ≈ 1 780 µs/frame). Next 1.7 (characters:
+crop at the water line, the swept ghost).

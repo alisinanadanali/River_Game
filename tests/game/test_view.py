@@ -143,6 +143,7 @@ def test_the_scene_has_the_observation_the_looks_and_the_status():
     s, view = ticked()
     sc = scene(view, s, TICK_S + 0.1)
     assert sc.obs == observe(s.state, Role.DONKEY)                              # V0: both roles see the same
+    assert (sc.before, sc.u) == (observe(s.previous, Role.DONKEY), progress(s))
     for role in Role:
         assert sc.looks[role] == look(view.animators[role], TICK_S + 0.1, CFG)
     assert (sc.mode, sc.paused, sc.seed) == (Mode.REALTIME.value, False, SEED)

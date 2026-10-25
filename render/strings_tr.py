@@ -115,3 +115,8 @@ MAIN_DESCRIPTION = "Nehir Geçidi: iki oyunculu nehir geçişi (aynı klavye)"
 MAIN_SEED_HELP = "harita ve olaylar için seed; verilmezse rastgele seçilir ve pencere başlığında yazar"
 MAIN_PROFILE_HELP = "config profili: warmup, percolation_edge, hard"
 MAIN_FRAMES_HELP = "bu kadar kare sonra çık (0: pencere kapanana kadar)"
+
+# tools/cvd_shots.py (VISUALS §3), terminal
+CVD_SHOTS_DESCRIPTION = "Örnek tahtanın normal görme ve üç renk körlüğü benzetimiyle ekran görüntüleri"
+CVD_SHOTS_OUT_HELP = "PNG'lerin yazılacağı klasör"
+CVD_SHOTS_WRITTEN = "{n} görüntü yazıldı: {out}"

@@ -18,7 +18,8 @@ SEED = 7
 def a_scene(**changes) -> Scene:
     state = dataclasses.replace(new_game(CFG, SEED)[0], **changes)
     looks = {role: Look(Clip.IDLE, pose(Clip.IDLE, 0.0, CFG), True) for role in Role}
-    return Scene(observe(state, Role.DONKEY), levels=tuple(state.water.level), feet={role: (0.0, 0.0) for role in Role},
+    obs = observe(state, Role.DONKEY)
+    return Scene(obs, before=obs, u=1.0, levels=tuple(state.water.level), feet={role: (0.0, 0.0) for role in Role},
                  rows={role: -1 for role in Role}, looks=looks, mode="realtime", paused=False, seed=SEED)
 
 

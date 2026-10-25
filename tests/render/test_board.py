@@ -5,9 +5,20 @@ import dataclasses
 import numpy as np
 import pytest
 
-from engine.donkey import effective_height, load_kg
+from engine.donkey import classify_depth, effective_height, load_kg
+from engine.events import DepthState
 from engine.stones import TempStone
-from render.board import front_face, stand_z, stone_top_z, surface_z, water_polygon, water_profile
+from render.board import (
+    front_face,
+    life_share,
+    margin,
+    stand_z,
+    stone_top_z,
+    surface_z,
+    tier_of,
+    water_polygon,
+    water_profile,
+)
 from render.layout import cell_rect
 from tests.render.boards import an_obs
 from tests.support import config_with
@@ -97,3 +108,38 @@ def test_a_stone_above_the_water_has_a_front_face_down_to_the_water():
 def test_a_stone_under_the_water_has_no_front_face():
     assert front_face(CFG, 3, 2, top_z=-5.0, level=-5.0) is None
     assert front_face(CFG, 3, 2, top_z=-6.0, level=-5.0) is None
+
+
+# --- the safety margin (§3) --------------------------------------------------------------------------------------
+
+def test_the_margin_of_an_empty_stone_is_for_the_donkeys_current_load():
+    """§3: "if the donkey stepped here now": e under its current load, also on stones it does not stand on."""
+    obs = an_obs({(3, 2): 11.0})
+    levels = [2.0] * COLS
+    e = effective_height(11.0, load_kg(obs.donkey, CFG), CFG.map.stiffness_kg_per_cm)
+    assert margin(obs, levels, 3, 2) == pytest.approx(e - 2.0)
+    assert margin(obs, levels, 3, 3) is None and margin(obs, levels, -1, 3) is None
+
+
+def test_the_margin_reads_the_drawn_level():
+    obs = an_obs({(3, 2): 11.0})
+    assert margin(obs, [0.0] * COLS, 3, 2) - margin(obs, [5.0] * COLS, 3, 2) == pytest.approx(5.0)
+
+
+@pytest.mark.parametrize(("base_h", "tier"), [
+    (15.0, DepthState.DRY), (2.0, DepthState.ANKLE), (-6.0, DepthState.KNEE), (-20.0, DepthState.SWEPT),
+])
+def test_the_tier_is_d04s_class_of_the_depth(base_h, tier):
+    obs = an_obs({(3, 2): base_h})
+    levels = [0.0] * COLS
+    assert tier_of(obs, levels, 3, 2) is tier is classify_depth(-margin(obs, levels, 3, 2), CFG.donkey)
+    assert tier_of(obs, levels, 3, 3) is None
+
+
+@pytest.mark.parametrize(("h", "share"), [
+    (CFG.shrek.rock_initial_h_cm, 1.0), (CFG.shrek.rock_vanish_h_cm, 0.0),
+    ((CFG.shrek.rock_initial_h_cm + CFG.shrek.rock_vanish_h_cm) / 2, 0.5),
+    (CFG.shrek.rock_initial_h_cm + CFG.shrek.rock_raise_cm, 1.0), (CFG.shrek.rock_vanish_h_cm - 1, 0.0),
+])
+def test_a_temporary_stones_life_is_its_height_between_spawn_and_vanish(h, share):
+    assert life_share(h, CFG) == pytest.approx(share)

@@ -63,6 +63,8 @@ def scene(view: View, session: Session, now_s: float) -> Scene:
     levels = tuple(float(lo + u * (hi - lo)) for lo, hi in zip(before.water.level, now.water.level))
     return Scene(
         obs=now,
+        before=before,
+        u=u,
         levels=levels,
         feet=feet_at,
         rows={role: min(a[0], b[0]) for role, (a, b) in cells.items()},   # the southern of the two rows

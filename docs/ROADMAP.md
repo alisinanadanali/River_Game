@@ -125,7 +125,7 @@ River_Game/
 ├── main.py                 # pygame kabuğu: pencere, olaylar, saat (Faz 1)
 ├── logs/                   # replay + olay JSONL + metrikler
 ├── envs/                   # Gymnasium + PettingZoo
-├── tools/                  # tactical_cli, design_calcs, ghosting_test, bench, character_preview
+├── tools/                  # tactical_cli, design_calcs, ghosting_test, bench, character_preview, cvd_shots
 ├── assets/fonts/           # Noto Sans (OFL)
 ├── assets/private/         # yerel karakter resimleri; .gitignore, git'e asla girmez (ADR-012)
 └── tests/

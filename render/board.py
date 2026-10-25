@@ -7,7 +7,8 @@ column as drawn this frame (interpolated between ticks), so the water is not rea
 from collections.abc import Sequence
 
 from engine.config import Config
-from engine.donkey import effective_height, load_kg, stone_under
+from engine.donkey import classify_depth, effective_height, load_kg, stone_under
+from engine.events import DepthState
 from engine.observe import Observation
 from render.layout import Rect, cell_rect
 
@@ -71,3 +72,29 @@ def front_face(cfg: Config, row: int, col: int, top_z: float, level: float) -> R
         return None
     x, y, w, h = cell_rect(cfg, row, col, top_z)
     return (x, y + h, w, (top_z - level) * cfg.render.layout.px_per_cm)
+
+
+
+def margin(obs: Observation, levels: Sequence[float], row: int, col: int) -> float | None:
+    """§3: m = e − L for a stone, e under the donkey's current load ("if it stepped here now", D-01). None on
+    water and on the banks."""
+    if is_bank(obs, row):
+        return None
+    stone = stone_under(obs, row, col)
+    if stone is None:
+        return None
+    h, k = stone
+    return effective_height(h, load_kg(obs.donkey, obs.config), k) - levels[col]
+
+
+def tier_of(obs: Observation, levels: Sequence[float], row: int, col: int) -> DepthState | None:
+    """§3: the colour tier is D-04's class of the depth d = −m."""
+    m = margin(obs, levels, row, col)
+    return None if m is None else classify_depth(-m, obs.config.donkey)
+
+
+def life_share(h: float, config: Config) -> float:
+    """§3: a temporary stone's life left, (h − vanish) / (initial − vanish), clipped to [0, 1]."""
+    shrek = config.shrek
+    share = (h - shrek.rock_vanish_h_cm) / (shrek.rock_initial_h_cm - shrek.rock_vanish_h_cm)
+    return min(1.0, max(0.0, share))

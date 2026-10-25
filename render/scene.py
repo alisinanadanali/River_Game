@@ -20,6 +20,8 @@ SECONDS_DECIMALS = 6  # the time left is rounded here before counting whole seco
 @dataclass(frozen=True)
 class Scene:
     obs: Observation
+    before: Observation                        # the previous tick's (colours blend from it, §3)
+    u: float                                   # the share of a tick since the last one, [0, 1]
     levels: tuple[float, ...]                  # L(c), cm, interpolated between ticks
     feet: Mapping[Role, tuple[float, float]]   # px, interpolated between ticks
     rows: Mapping[Role, int]                   # the row each character is drawn with (VISUALS §2 order)

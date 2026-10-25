@@ -59,11 +59,28 @@ bir **desenle** ayırt edilir, renk tek kanal değildir.
 | DİZ | −d₂ < m ≤ −d₁ | Turuncu | `#E69F00` | Çapraz çizgiler |
 | TEHLİKE | m ≤ −d₂ | Kırmızımsı (vermillion) | `#D55E00` | Kafes + "!" ikonu |
 
+- Kademe sınırları D-04'ün sınıflandırmasıdır (`classify_depth(d)`, `d = −m`); tablo `depth_ankle_cm = 0` içindir.
+  Eşeğin durduğu taşta `e` zaten o yükle hesaplanır, yani renk eşeğin kendi derinlik durumunu gösterir.
 - Su: `#0072B2` (mavi), saydam. Kuru taşların yeşili ile çakışmaz.
-- Yosunlu taş: üst yüzde dalgalı "≈" işareti ve koyu kontur.
-- Geçici taş: kesikli kontur ve üst yüzde kalan ömür çubuğu (`h − rock_vanish_h_cm`).
-- Kademeler arası geçişte renk, tick interpolasyonuyla yumuşak değişir; kademe sınırı geçildiğinde desen anında değişir.
-- Doğrulama: Faz 1'de ekran görüntüleri deuteranopi/protanopi simülatöründen geçirilir.
+- **Desenler** üst yüze, `palette.background` (koyu) mürekkeple çizilir. Desen yoğunluğu tehlikeyle artar: KURU
+  boş, BİLEK seyrek noktalar, DİZ tek yönlü çapraz çizgiler, TEHLİKE iki yönlü kafes ve ortada "!" işareti
+  (çizgiyle çizilir, fonttan değil).
+- Yosunlu taş: üst yüzde dalgalı "≈" işareti (iki dalgalı çizgi) ve koyu kontur.
+- Geçici taş: kesikli kontur ve üst yüzün güney kenarında kalan ömür çubuğu: dolu payı
+  `(h − rock_vanish_h_cm) / (rock_initial_h_cm − rock_vanish_h_cm)`, [0, 1]'e kırpılır.
+- **Tick'ler arasında:** renk, önceki tick'teki kademenin renginden şimdikinin rengine `u` ile doğrusal geçer;
+  desen, o karede çizilen su seviyesiyle (`L` interpolasyonlu) hesaplanan kademeye göre anında değişir.
+- **Doğrulama (renk körlüğü, `tests/render/test_colour.py`):** renkler Machado, Oliveira ve Fernandes (2009)
+  benzetim matrisleriyle (şiddet 1,0; protanopi, döteranopi, tritanopi; doğrusal sRGB üzerinde) dönüştürülür,
+  CIELAB'da (D65) CIE76 farkı ölçülür. Eşik **ΔE₇₆ ≥ 10** (bir bakışta ayırt edilir; fark edilebilirlik eşiği
+  ≈ 2,3'tür). Koşullar, normal görme ve üç benzetimin her birinde:
+  1. Dört kademe rengi, su üstünde, ikişer ikişer ΔE₇₆ ≥ 10. (Ölçüm 2026-10-25: en küçüğü döteranopide BİLEK–DİZ,
+     ≈ 17.)
+  2. Su altında renk tek başına yetmez: su (alfa 0,55) rengi maviye çeker; protanopide su üstü KURU ile su altı
+     BİLEK arasında ΔE₇₆ ≈ 4,4. Bu yüzden desen taşır: her kademenin deseni farklıdır, desen yoğunluğu kademeyle
+     kesin artar ve mürekkep ile zemin arasındaki fark su üstünde ve altında ΔE₇₆ ≥ 10'dur.
+- **Ekran görüntüleri:** `uv run python -m tools.cvd_shots` dört kademeyi su üstünde ve altında gösteren bir
+  tahtayı normal ve üç benzetimle `runs/cvd/` altına PNG olarak yazar (git'e girmez); gözle kontrol içindir.
 
 ## 4. Ekran yerleşimi (1280 × 720, ölçeklenebilir)
 
@@ -96,8 +113,8 @@ Faz 1'in ilk oynanabilir penceresi; sonraki adımlar her parçayı yerine koyar 
   `x = x0 + (c + ½) · tile_w`, `y = y0 + (R − 1 − r + ½) · tile_h − z · px_per_cm`; satır −1 (güney kıyı) en
   altta, satır R (kuzey kıyı) en üstte. Tahta, payıyla birlikte, harita alanının (§4: üst/alt şerit ve iki panel
   dışında kalan alan) ortasındadır.
-- **Hücreler:** kıyılar `palette.bank`, taşlar (kalıcı ve geçici) `palette.dry` (1.6'da güvenlik payı renkleri),
-  su `palette.water`, §2'deki gibi.
+- **Hücreler:** kıyılar `palette.bank`, taşlar (kalıcı ve geçici) §3'ün güvenlik payı renkleri, desenleri ve
+  işaretleriyle (Faz 1.6), su `palette.water`, §2'deki gibi.
 - **Karakterler:** ayakları durdukları yüzeyde, hücre ortasında: kıyıda `bank_z_cm`, taşta §2'nin üst yüz z'si, taşı olmayan hücrede (ör. geçici taş
   altında kaybolunca) su yüzeyi `L(c)`.
   Shrek güney kıyı hücresinin güney kenarında (eşek de başlangıçta güney kıyıdadır, ikisi üst üste binmez).

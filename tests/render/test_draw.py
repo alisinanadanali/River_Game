@@ -7,6 +7,7 @@ depend on the local images.
 
 import dataclasses
 import os
+from collections import Counter
 from pathlib import Path
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -17,11 +18,11 @@ import pytest  # noqa: E402
 from engine.events import ProjectileKind, Role  # noqa: E402
 from engine.observe import Observation, ProjectileView  # noqa: E402
 from engine.stones import TempStone  # noqa: E402
-from render.board import stand_z  # noqa: E402
+from render.board import life_share, stand_z  # noqa: E402
 from render.characters.animator import Look  # noqa: E402
 from render.characters.pose import Clip, pose  # noqa: E402
 from render.characters.sprites import load_character  # noqa: E402
-from render.draw import FONT_PX, Assets, draw_scene  # noqa: E402
+from render.draw import FONT_PX, LIFE_BAR_MARGIN_PX, LIFE_BAR_PX, Assets, draw_scene  # noqa: E402
 from render.fonts import load_font  # noqa: E402
 from render.layout import board_rect, cell_center, cell_rect, feet, map_area  # noqa: E402
 from render.scene import Scene  # noqa: E402
@@ -41,10 +42,10 @@ def assets():
     pygame.quit()
 
 
-def a_scene(obs: Observation, levels=None) -> Scene:
+def a_scene(obs: Observation, levels=None, before: Observation | None = None, u: float = 1.0) -> Scene:
     cells = {Role.SHREK: (-1, obs.shrek.col), Role.DONKEY: (obs.donkey.row, obs.donkey.col)}
     looks = {role: Look(Clip.IDLE, pose(Clip.IDLE, 0.0, CFG), True) for role in Role}
-    return Scene(obs, levels=tuple(obs.water.level) if levels is None else tuple(levels),
+    return Scene(obs, before=obs if before is None else before, u=u, levels=tuple(obs.water.level) if levels is None else tuple(levels),
                  feet={role: feet(CFG, role, cell, stand_z(obs, *cell)) for role, cell in cells.items()},
                  rows={role: cell[0] for role, cell in cells.items()}, looks=looks, mode="realtime", paused=False,
                  seed=7)
@@ -97,8 +98,8 @@ def test_a_stone_above_the_water_is_a_prism(assets):
 
 
 def test_a_stone_under_the_water_shows_through_it(assets):
-    screen = drawn(assets, a_scene(an_obs({(5, 3): -10.0})))
-    assert close(at(screen, cell_center(CFG, 5, 3, -10.0)), water_over(colour(PALETTE.dry)))
+    screen = drawn(assets, a_scene(an_obs({(5, 3): -10.0})))                # loaded e = −14: DİZ
+    assert close(dominant(face(screen, 5, 3, -10.0)), water_over(colour(PALETTE.knee)))
 
 
 def test_open_water_lies_over_the_background(assets):
@@ -194,3 +195,71 @@ def test_water_has_no_seams_between_rows_and_stays_on_the_board(assets):
     assert all(close(at(screen, (x + w / 2, y + dy)), expected) for dy in (-1, 0, 1))   # row 6 | row 5 boundary
     bx, _, bw, _ = board_rect(CFG)
     assert at(screen, (bx + bw, cell_center(CFG, 5, 1)[1])) == pygame.Color(PALETTE.background)
+
+
+# --- the safety margin (§3) --------------------------------------------------------------------------------------
+
+def face(screen, r, c, top_z):
+    """The colours of a stone's top face, inside its edges and above the next row's water (pygame Colors)."""
+    x, y, w, h = (round(v) for v in cell_rect(CFG, r, c, top_z))
+    row_bottom = round(cell_rect(CFG, r, c)[1] + LAY.tile_h_px)            # below: the next row's water
+    return [screen.get_at((px, py)) for px in range(x + 1, x + w - 1) for py in range(y + 1, min(y + h, row_bottom) - 1)]
+
+
+def dominant(pixels) -> tuple[int, int, int]:
+    return Counter(tuple(p)[:3] for p in pixels).most_common(1)[0][0]
+
+
+def ink_share(pixels) -> float:
+    main = dominant(pixels)
+    return sum(tuple(p)[:3] != main for p in pixels) / len(pixels)
+
+
+TIER_STONES = [  # base height → (tier colour, seen under water?); level 0, the donkey's 200 kg sink 4 cm
+    (15.0, PALETTE.dry, False), (2.0, PALETTE.ankle, False), (-6.0, PALETTE.knee, True), (-20.0, PALETTE.danger, True),
+]
+
+
+@pytest.mark.parametrize(("base_h", "tier_colour", "under"), TIER_STONES)
+def test_each_tier_has_its_colour(assets, base_h, tier_colour, under):
+    pixels = face(drawn(assets, a_scene(an_obs({(5, 1): base_h}))), 5, 1, base_h)
+    expected = water_over(colour(tier_colour)) if under else colour(tier_colour)
+    assert close(dominant(pixels), expected)
+
+
+def test_the_pattern_ink_grows_with_the_danger(assets):
+    shares = [ink_share(face(drawn(assets, a_scene(an_obs({(5, 1): h}))), 5, 1, h)) for h, _, _ in TIER_STONES]
+    assert shares[0] == 0 and shares == sorted(shares) and len(set(shares)) == len(shares), shares
+
+
+def test_between_ticks_the_colour_blends_and_the_pattern_follows_the_drawn_water(assets):
+    """Base 2 cm, loaded e = −2: L = −10 → DRY (previous tick), L = 0 → ANKLE (this tick)."""
+    before, now = an_obs({(5, 1): 2.0}, level=-10.0), an_obs({(5, 1): 2.0}, level=0.0)
+    for u, inked in ((0.5, False), (0.9, True)):
+        levels = [-10.0 * (1 - u)] * CFG.map.cols                          # m = −2 + 5 = 3 > 0; m = −2 + 1 = −1
+        pixels = face(drawn(assets, a_scene(now, levels, before=before, u=u)), 5, 1, 2.0)
+        mix = tuple(d + u * (a - d) for d, a in zip(colour(PALETTE.dry), colour(PALETTE.ankle)))
+        assert close(dominant(pixels), mix), u
+        assert (ink_share(pixels) > 0) is inked, u
+
+
+def test_a_mossy_stone_has_a_dark_contour_and_a_wave_mark(assets):
+    plain = drawn(assets, a_scene(an_obs({(5, 1): 15.0})))
+    mossy = drawn(assets, a_scene(an_obs({(5, 1): 15.0}, mossy=[(5, 1)])))
+    x, y, _, _ = cell_rect(CFG, 5, 1, 15.0)
+    assert at(mossy, (x, y)) == pygame.Color(PALETTE.background) != at(plain, (x, y))
+    assert ink_share(face(plain, 5, 1, 15.0)) == 0 < ink_share(face(mossy, 5, 1, 15.0))
+
+
+def test_a_temporary_stone_has_a_dashed_contour_and_a_life_bar(assets):
+    shrek = CFG.shrek
+    for h in (shrek.rock_initial_h_cm, (shrek.rock_initial_h_cm + shrek.rock_vanish_h_cm) / 2):
+        rock = TempStone(id=0, row=6, col=1, h=h, spawned_at=0)
+        screen = drawn(assets, a_scene(an_obs({}, temp=(rock,), level=-30.0)))   # high and dry: no water over it
+        x, y, w, hh = (round(v) for v in cell_rect(CFG, 6, 1, h))
+        edge = [at(screen, (px, y)) == pygame.Color(PALETTE.background) for px in range(x, x + w)]
+        assert 0 < sum(edge) < len(edge)                                          # dashed
+        bar_y = y + hh - LIFE_BAR_MARGIN_PX - LIFE_BAR_PX // 2 - 1
+        bar_w = w - 2 * LIFE_BAR_MARGIN_PX
+        filled = sum(at(screen, (px, bar_y)) == pygame.Color(PALETTE.text) for px in range(x, x + w))
+        assert filled == pytest.approx(life_share(h, CFG) * bar_w, abs=1)
