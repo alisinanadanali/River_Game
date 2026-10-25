@@ -140,6 +140,26 @@ Pencere yok; iki oyuncu aynı terminalde sırayla yazar. Çekirdek `tools/tactic
   ve yüzen yükler ve son tick'in olayları (EVENTS.md adlarıyla) yazar.
 - Oyun `game_over` olunca son durum ve skor basılır, program 0 ile çıkar.
 
+### 5.2 Pencerede taktik onay (Faz 1, `controllers/tactical.py`)
+
+Gerçek zamanlı tampon (§4) yerine çalışır; tuşlar aynı düzendir (`controls.shrek_keymap`). Yalnız basışlar
+(§4.1) sayılır: basılı tutma, bırakma ve odak kaybı taktik modda bir şey yapmaz.
+
+- **Eşek:** herhangi bir eşek tuşu (W A S D Q E) o eylemi seçer ve **onaylar**; X `NOOP`'u onaylar.
+- **Shrek seçimi:** `move` (← →) ve `aim` (↑ ↓) tuşları onaylamadan seçer; seçim ekranda gösterilir. Bileşen
+  başına son basış kazanır (← sonra → = doğu). Seçili tuşa **yeniden basmak seçimi kaldırır** (← ← = yürüme
+  yok); onaylamadan önce seçimi geri almanın tek yolu budur.
+- **Shrek onayı:** bir yetenek tuşu (THROW, ROCK, DAM) seçimi o yetenekle onaylar; bekle tuşu (`.`) seçimi
+  `ability = NONE` ile onaylar. Seçim yoksa `.` "bekle" demektir. Örnekler: `→ ↑ Sağ Ctrl` = doğuya yürü,
+  nişanı artır, fırlat; `← .` = yalnız batıya yürü; `.` = bekle.
+- **Onay kesindir:** onaylayan rolün o tick'teki sonraki basışları yok sayılır. Hangi rolün önce onayladığı
+  önemsizdir.
+- İki rol de onaylayınca tick ilerler (`step`); sonraki tick boş başlar: seçimler taşınmaz, DAM her tick
+  yeniden seçilir (basılı tutma yoktur).
+- Rolün tuşu olmayan scancode'lar (öbür rol, genel tuşlar, tanımsız) o rolü etkilemez; genel tuşları (§3,
+  F2 dahil) oyun oturumu işler.
+- Pencerede seçim ve onay, metin taktik modundaki tek satırla aynı eylemi verir (§5.1: `li` ↔ L, I, M).
+
 ## 6. Ghosting testi (ROADMAP Faz 0 sonu)
 
 Araç: `tools/ghosting_test.py` (pygame-ce penceresi; anlık basılı scancode'ları ve her tick oluşan iki eylemi

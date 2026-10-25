@@ -79,13 +79,17 @@ def shrek_action(buffer: KeyBuffer, keys: dict[str, int]) -> ShrekAction:
 
 def tick_actions(buffer: KeyBuffer, controls: ControlsConfig) -> tuple[Actions, KeyBuffer]:
     """The tick boundary: both roles' actions, and the next window (the held keys, no presses)."""
-    keymaps = controls.keymaps
-    shrek_keys = keymaps.shrek_alt if controls.shrek_keymap == "alt" else keymaps.shrek_default
     actions = Actions(
-        donkey=donkey_action(buffer, keymaps.donkey.model_dump()),
-        shrek=shrek_action(buffer, shrek_keys.model_dump()),
+        donkey=donkey_action(buffer, controls.keymaps.donkey.model_dump()),
+        shrek=shrek_action(buffer, shrek_keymap(controls)),
     )
     return actions, KeyBuffer(held=buffer.held)
+
+
+def shrek_keymap(controls: ControlsConfig) -> dict[str, int]:
+    """CONTROLS §2: the Shrek layout chosen by controls.shrek_keymap, action name → scancode."""
+    keymaps = controls.keymaps
+    return (keymaps.shrek_alt if controls.shrek_keymap == "alt" else keymaps.shrek_default).model_dump()
 
 
 def _last(codes: tuple[int, ...], values: dict):

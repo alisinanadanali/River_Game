@@ -226,6 +226,9 @@ def test_held_is_the_set_of_keys_down_without_repeats(events):
 def test_what_never_comes_from_holding_alone(events):
     for buffer in boundaries(events):
         actions = tick_actions(buffer, CFG.controls)[0]
+        assert type(actions.donkey) is DonkeyAction                         # exact types: the StrEnums' NONE
+        assert (type(actions.shrek.move), type(actions.shrek.aim), type(actions.shrek.ability)) == (
+            ShrekMove, Aim, Ability)                                        # values compare equal as strings
         assert (actions.shrek.ability is Ability.DAM) == (ENTER in buffer.held or ENTER in buffer.pressed)
         if actions.shrek.ability in (Ability.THROW, Ability.ROCK):
             assert {R_CTRL, R_SHIFT} & set(buffer.pressed)

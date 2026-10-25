@@ -85,4 +85,6 @@ hashes in VISUALS §7) and `tools/character_preview.py` (`--bench`
 ≈ 240 µs/frame). `tests/render/test_render_imports.py` guards render/'s imports (ADR-005 update). Next: the
 Phase 1 micro-steps (ROADMAP); 1.0 (fonts + strings) done; 1.1 done: `controllers/keyboard.py` (pure input
 buffer, CONTROLS §4.1: scancode events in, `tick_actions` at the boundary; no pygame, guarded by
-`tests/controllers/test_controllers_imports.py`). Next 1.2 (tactical confirm, CONTROLS §5).
+`tests/controllers/test_controllers_imports.py`); 1.2 done: `controllers/tactical.py` (pure tactical
+confirm, CONTROLS §5.2: Shrek selects move/aim, an ability or the wait key confirms; a confirmation is
+final). Next 1.3 (`game/session.py`: fixed-step clock, F2/Esc/F5, game over).

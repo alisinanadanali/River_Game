@@ -97,6 +97,8 @@ eklenir, sonra kodda ve arayüzde kullanılır. Birim sütunu ADR-008'e uyar: y�
 | Girdi tamponu | `KeyBuffer` | Bir tick penceresinin basışları ve basılı tuşlar (CONTROLS §4) |
 | Basış | `press` (`KeyDown`) | Tuşun bırakılmış durumdan basılıya geçişi (CONTROLS §4.1) |
 | Basılı tutma tekrarı | `hold repeat` | Penceredeki basış yoksa basılı hareket/nişan tuşunun eylemi |
+| Seçim (taktik) | `selection` | Shrek'in onaylanmamış `move`/`aim` tercihi (CONTROLS §5.2) |
+| Onay (taktik) | `confirm` | Rolün o tick'teki eylemini kesinleştiren basış (CONTROLS §5.2) |
 | Hata ayıklama katmanı | `debug_overlay` | F1 ile açılan sayısal katman |
 | RNG akışı | `rng stream` | `rng_world`, `rng_water`, `rng_items`, `rng_throw`, `rng_slip` |
 | Kural kimliği | `rule id` | MODEL.md'deki M-, W-, D-, S-, I-, R- önekli kimlik |
